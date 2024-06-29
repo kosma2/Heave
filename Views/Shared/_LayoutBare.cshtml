@@ -1,0 +1,29 @@
+<nav>
+    <ul>
+        <li>Login
+            <ul>
+                <li>@Html.ActionLink("Login", "Login", "Home")</li>
+                <li>@Html.ActionLink("Logout", "Logout", "Home")</li>
+            </ul>
+        </li>
+        <li>Customer
+            <ul>
+                <li>@Html.ActionLink("Create Member", "CreateMember", "Common")</li>
+                <li>@Html.ActionLink("Create Customer", "CreateCustomer", "Common")</li>
+                <li>@Html.ActionLink("Display Products", "Products", "Common")</li>
+                <li>@Html.ActionLink("Order Product", "CreateOrder", "Common")</li>
+                <li>@Html.ActionLink("List My Orders", "MyOrders", "Common")</li>
+                <li>@Html.ActionLink("List Orders", "Orders", "Admin")</li>
+                <li>@Html.ActionLink("Delete Customer", "DeleteCustomer", "Admin")</li>
+                <li>@Html.ActionLink("Display Customers", "Customers", "Admin")</li>
+            </ul>
+        </li>
+        <li>Delivery
+            <ul>
+                <li>@Html.ActionLink("Create Feature", "CreateFeature", "Deliver")</li>
+                <li>@Html.ActionLink("Display Features", "Features", "Deliver")</li>
+                <li>@Html.ActionLink("Delete Feature", "DeleteFeature", "Deliver")</li>
+            </ul>
+        </li>
+    </ul>
+</nav>

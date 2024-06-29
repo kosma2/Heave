@@ -1,0 +1,11 @@
+﻿@model MemberLoginModel
+@{
+    ViewData["Title"] = "Confirmation";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Success!</h1>
+</div>
+@if(ViewBag.Message != null){   
+    <p>@ViewBag.Message</p>
+}

@@ -1,0 +1,19 @@
+@model List<(int,String)>
+
+<h2>Products</h2>
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Product</th>
+    </tr>
+@foreach ((int, string) product in Model)
+{
+    <tr>
+        <td>@product.Item1</td>
+        <td>@product.Item2</td>
+    </tr>
+}
+</table>
+@if(ViewBag.Message != null){   
+    <p>@ViewBag.Message</p>
+}

@@ -15,6 +15,7 @@ public class HomeController : Controller
 
     public IActionResult Index()
     {
+        
         return View(new MemberLoginModel());
     }
 
@@ -22,7 +23,6 @@ public class HomeController : Controller
     {
         return View();
     }
-////added
     [HttpPost]
         public IActionResult Index(MemberLoginModel model)
         {
@@ -59,7 +59,6 @@ public class HomeController : Controller
            
             return View("Index",model);
         }
-////added
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

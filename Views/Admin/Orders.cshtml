@@ -1,0 +1,21 @@
+@model List<List<string>>
+
+<h2>Orders</h2>
+<table>
+    <tr>
+        <th>Order ID</th>
+        <th>Address</th>
+        <th>Status</th>
+    </tr>
+@foreach (List<String> order in Model)
+{
+    <tr>
+        <td>@order[0]</td>
+        <td>@order[1]</td>
+        <td>@order[2]</td>
+    </tr>
+}
+</table>
+@if(ViewBag.Message != null){   
+    <p>@ViewBag.Message</p>
+}     

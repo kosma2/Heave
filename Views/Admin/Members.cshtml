@@ -1,0 +1,26 @@
+@model List<(int,String)>
+
+<h2>Members</h2>
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Member</th>
+        <th>Actions</th>
+    </tr>
+@foreach ((int, string) member in Model)
+{
+    int memberId =member.Item1;
+    string memName = member.Item2;
+    <tr>
+        <td>@memberId</td>
+        <td>@memName</td>
+        <td><form asp-action="DeleteMember" asp-controller="Admin" method="post">
+                <input type="hidden" name="memberId" value="@memberId" />
+                <button type="submit" class="btn btn-danger">delete</button>
+            </form></td>
+    </tr>
+}
+</table>
+@if(ViewBag.Message != null){   
+    <p>@ViewBag.Message</p>
+}

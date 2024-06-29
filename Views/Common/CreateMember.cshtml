@@ -1,0 +1,21 @@
+@model DynamicFormModel
+
+<form asp-action="DynamicForm" asp-controller="Common" method="post">
+    @Html.AntiForgeryToken()
+    
+    <fieldset>
+        <legend>@Model.FormType</legend>
+        @foreach (KeyValuePair<string, string> input in Model.FieldInputs)
+        {
+            <div class="form-group">
+                <label>@input.Key</label>
+                <input type="text" placeholder="@input.Key" name="FieldInputs[@input.Key]" value="@input.Value" class="form-control" />
+            </div>
+        }
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </fieldset>
+</form>
+@if(ViewBag.Message != null)
+{
+    <p>@ViewBag.Message</p>
+}

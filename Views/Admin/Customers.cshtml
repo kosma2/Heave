@@ -1,0 +1,23 @@
+@model List<(int,String)>
+
+<h2>Customers</h2>
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Actions</th>
+    </tr>
+@foreach ((int, string) customer in Model)
+{
+    <tr>
+        <td>@customer.Item1</td>
+        <td>@customer.Item2</td>
+        <td>
+            <!-- Actions like Edit/Delete -->
+        </td>
+    </tr>
+}
+</table>
+@if(ViewBag.Message != null){   
+    <p>@ViewBag.Message</p>
+}

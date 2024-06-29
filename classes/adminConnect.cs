@@ -31,7 +31,39 @@ namespace Heave
                     }
                 }
             }
-            public override string GetItemName(int itemId)
+            public override List<(int ItemId, String ItemName)> DBListMembers() // dispays mambers in tuples (memId, login)
+            {
+                SqlConnection connecti = GetConnection(SqlStr);
+                using (connecti)
+                {
+                    String sql = "SELECT MemberId, Login FROM Member;"; 
+                    using (SqlCommand command = new SqlCommand(sql, connecti))
+                    {
+                        connecti.Open();
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                int rowCount = 0;
+                                List<(int,string)> idAndLogin = new();
+                                while (reader.Read())
+                                {
+                                    int memId = Convert.ToInt32(reader["MemberId"]);
+                                    string memLogin = reader["Login"].ToString();
+                                    idAndLogin.Add((memId,memLogin));
+                                }
+                                return idAndLogin;
+                            }
+                            else
+                            {
+                                Console.WriteLine("No rows found.");
+                                reader.Close();
+                                return null;
+                            }
+                        }
+                    }
+                }
+            }            public override string GetItemName(int itemId)
             {
                 using (SqlConnection connection = GetConnection(SqlStr))
                 {
@@ -136,7 +168,7 @@ namespace Heave
             {
                 return true;
             }
-            public override void DBCreateMember(Member memb)
+            public override int DBCreateMember(Member memb)//REDUNDANT FIX RETURN
             {
                 SqlConnection connection = GetConnection(SqlStr);
                 using (connection)
@@ -162,6 +194,7 @@ namespace Heave
                         Console.WriteLine(rowsAffected + " row(s) inserted");
                     }
                 }
+                return -5;
             }
             public override void DBAddItem(Item item)
             {
@@ -232,6 +265,23 @@ namespace Heave
                     using (SqlCommand command = new SqlCommand(sql, connection))
                     {
                         command.Parameters.AddWithValue("@custId", CustomerId);
+                        connection.Open();
+                        int rowsAffected = command.ExecuteNonQuery();
+                        System.Console.WriteLine(rowsAffected);
+                    }
+                }
+            }
+            public void DBDeleteMember(int memberId)
+            {
+                SqlConnection connection = GetConnection(SqlStr);
+                using (connection)
+                {
+                    StringBuilder sb = new();
+                    sb.Append("DELETE FROM Member WHERE memberId = @memId");
+                    String sql = sb.ToString();
+                    using (SqlCommand command = new SqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@memId", memberId);
                         connection.Open();
                         int rowsAffected = command.ExecuteNonQuery();
                         System.Console.WriteLine(rowsAffected);

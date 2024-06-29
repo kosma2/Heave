@@ -17,14 +17,11 @@ namespace Heave
             public abstract List<(int ItemId, String ItemName)> DBListItems();
             public abstract void DBAddItem(Item item);
             public abstract void DBDeleteItem(String id);
-            public abstract void DBUpdateCustomer(String id);
-            public abstract void DBDeleteCustomer(int CustomerId);
             public abstract int DBCreateMember(Member mem);
             public abstract bool DBCreateCustomer(Customer cust);
             public abstract int DBCheckLogin(Member mem);
             public abstract decimal GetItemPrice(int itemId);
              public abstract List<(int,string)> ShowCustomers();
-            public abstract List<(int ItemId, String ItemName)> DBListMembers();
 
         }
     }

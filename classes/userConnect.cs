@@ -400,30 +400,7 @@ namespace Heave
             public override void DBDeleteItem(string id)
             {
             }
-            public override void DBUpdateCustomer(String id)
-            {
-                SqlConnection connection = GetConnection(SqlStr);
-                using (connection)
-                {
-                    String userToUpdate = "juju";
-                    StringBuilder sb = new StringBuilder();
-                    sb.Append("UPDATE Customer SET = N'Some Place St' WHERE LastName = @lastName");
-                    String sql = sb.ToString();
-                    using (SqlCommand command = new SqlCommand(sql, connection))
-                    {
-                        command.Parameters.AddWithValue("@lastName", userToUpdate);
-                        int rowsAffected = command.ExecuteNonQuery();
-                        System.Console.WriteLine(rowsAffected);
-                    }
-                }
-            }
-            public override void DBDeleteCustomer(int CustomerId)
-            {
-            }
-            public override List<(int ItemId, String ItemName)> DBListMembers()
-            {
-                return null;
-            }
+            
 
         }
     }

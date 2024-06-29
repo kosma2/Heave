@@ -7,20 +7,32 @@
         <th>Member</th>
         <th>Actions</th>
     </tr>
-@foreach ((int, string) member in Model)
-{
-    int memberId =member.Item1;
-    string memName = member.Item2;
-    <tr>
-        <td>@memberId</td>
-        <td>@memName</td>
-        <td><form asp-action="DeleteMember" asp-controller="Admin" method="post">
-                <input type="hidden" name="memberId" value="@memberId" />
-                <button type="submit" class="btn btn-danger">delete</button>
-            </form></td>
-    </tr>
-}
+    @foreach ((int, string) member in Model)
+    {
+        int memberId = member.Item1;
+        string memName = member.Item2;
+        <tr>
+            <td>@memberId</td>
+            <td><a asp-action="MemberInfo" asp-controller="Common" asp-route-memberId="@memberId" class="btn btn-danger">
+                    View @memName</a>
+            <td>
+                <form asp-action="UpdateRole" asp-controller="Admin" method="post" style="display: inline-block;">
+                    <input type="hidden" name="memberId" value="@memberId" />
+                    <select name="role" class="form-select form-select-sm" aria-label=".form-select-sm example">
+                        <option value="0">Admin</option>
+                        <option value="2">Customer</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Update Role</button>
+                </form>
+                <form asp-action="DeleteMember" asp-controller="Admin" method="post">
+                    <input type="hidden" name="memberId" value="@memberId" />
+                    <button type="submit" class="btn btn-danger">delete</button>
+                </form>
+            </td>
+        </tr>
+    }
 </table>
-@if(ViewBag.Message != null){   
+@if (ViewBag.Message != null)
+{
     <p>@ViewBag.Message</p>
 }

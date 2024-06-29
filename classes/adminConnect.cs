@@ -31,7 +31,7 @@ namespace Heave
                     }
                 }
             }
-            public override List<(int ItemId, String ItemName)> DBListMembers() // dispays mambers in tuples (memId, login)
+            public List<(int ItemId, String ItemName)> DBListMembers() // dispays mambers in tuples (memId, login)
             {
                 SqlConnection connecti = GetConnection(SqlStr);
                 using (connecti)
@@ -237,7 +237,7 @@ namespace Heave
                     }
                 }
             }
-            public override void DBUpdateCustomer(String id)
+            public void DBUpdateCustomer(String id)//needs change
             {
                 SqlConnection connection = GetConnection(SqlStr);
                 using (connection)
@@ -254,7 +254,25 @@ namespace Heave
                     }
                 }
             }
-            public override void DBDeleteCustomer(int CustomerId)
+            public bool DBUpdateMemberRole(int memberId, int role) //true if rowsAffected
+            {
+                SqlConnection connection = GetConnection(SqlStr);
+                using (connection)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append("UPDATE Member SET Role = @role WHERE MemberId = @id;");
+                    String sql = sb.ToString();
+                    connection.Open();
+                    using (SqlCommand command = new SqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@id", memberId);
+                        command.Parameters.AddWithValue("@role", role);
+                        int rowsAffected = command.ExecuteNonQuery();
+                        return rowsAffected > 0;
+                    }
+                }
+            }
+            public void DBDeleteCustomer(int CustomerId)
             {
                 SqlConnection connection = GetConnection(SqlStr);
                 using (connection)

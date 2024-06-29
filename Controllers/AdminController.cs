@@ -48,7 +48,15 @@ public class AdminController : Controller
         return View(memberList);
     }
     
+    
     [HttpPost]
+    public IActionResult UpdateRole(int memberId,int role)
+    {
+        Program.adminConnect adminConnect = InitAdminConnect();
+        bool success = adminConnect.DBUpdateMemberRole(memberId, role);
+        ViewBag.Message = success ? $"Member {memberId}'s role was changed to {role} ." : "something went wrong";
+        return View("Confirmation");
+    }
     public IActionResult DeleteMember(int memberId)
     {
         Program.adminConnect adminConnect = InitAdminConnect();

@@ -91,7 +91,7 @@ namespace Heave
                 return (itemNo,quant);//(inputItemId, quant);
 
             }
-            public override int DBcreateOrder(int custId, int itemId, int quantity) //returns orderId
+            public override int DBCreateOrder(int custId, int itemId, int quantity) //returns orderId
             {
                 String custAddress = GetCustomerAddress(custId);
                 System.Console.WriteLine(custAddress);

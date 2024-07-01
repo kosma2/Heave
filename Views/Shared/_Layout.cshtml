@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Heave.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 
 <body>
@@ -43,8 +44,6 @@
                                         Customer</a></li>
                                 <li><a class="dropdown-item" asp-controller="Common" asp-action="Products">Display
                                         Products</a></li>
-                                <li><a class="dropdown-item" asp-controller="Common" asp-action="CreateOrder">Order
-                                        Product</a></li>
                                 <li><a class="dropdown-item" asp-controller="Common" asp-action="MyOrders">List My
                                         Orders</a></li>
                                 <li><a class="dropdown-item" asp-controller="Admin" asp-action="Orders">List Orders</a>
@@ -65,7 +64,7 @@
                             <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                                 <li><a class="dropdown-item" asp-controller="Deliver" asp-action="CreateFeature">Create
                                         Feature</a></li>
-                                <li><a class="dropdown-item" asp-controller="Deliver" asp-action="Features">Display
+                                <li><a class="dropdown-item" asp-controller="Geo" asp-action="Features">Display
                                         Features</a></li>
                                 <li><a class="dropdown-item" asp-controller="Deliver" asp-action="DeleteFeature">Delete
                                         Feature</a></li>
@@ -94,6 +93,8 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="~/js/mapInit.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 

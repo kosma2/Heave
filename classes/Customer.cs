@@ -1,6 +1,6 @@
 namespace Heave
 {
-    class Customer : Member
+    public class Customer : Member //add emaill
     {
         public string FirstName { get; set; } = "";
         public string LastName { get; set; } = "";
@@ -18,5 +18,8 @@ namespace Heave
             Coordinates = coords;
             DateCreated = DateTime.Now;
         }
+            public Customer() : base()
+            {}   
+    
     }
 }

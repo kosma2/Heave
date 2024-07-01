@@ -1,0 +1,19 @@
+@model Customer
+
+<h2>Create Customer from Member @Model.MemberId</h2>
+<form asp-action="CreateCustomer" asp-controller="Admin" method="post">
+    <input asp-for="MemberId" type="hidden" />
+    <label asp-for="FirstName">First Name:</label>
+    <input asp-for="FirstName" />
+    <br />
+    <label asp-for="LastName">Last Name</label>
+    <input asp-for="LastName" />
+    <br />
+    <label asp-for="HomeAddress">Address</label>
+    <input asp-for="HomeAddress" />
+    <br />
+    <label asp-for="Coordinates">Coordinates</label>
+    <input asp-for="Coordinates" />
+    <br />
+    <input type="submit" value="Create" />
+</form>

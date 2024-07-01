@@ -11,11 +11,12 @@ public class AdminController : Controller
     {
         _configuration = configuration;
     }
+    Program.UserSession uSession = new(0,0);//
+
 
     private Program.adminConnect InitAdminConnect()//handles sql init for adminConnect methods
     {
         string connectionString = _configuration.GetConnectionString("DefaultConnection");
-        Program.UserSession uSession = null;
         Program.adminConnect adminConnect = new();
         adminConnect.SqlStr = connectionString;
         return adminConnect;
@@ -34,18 +35,25 @@ public class AdminController : Controller
     public IActionResult Orders()
     {
         string connectionString = _configuration.GetConnectionString("DefaultConnection");
-        Program.UserSession uSession = null;
         Program.userConnect userConnect = new();
         userConnect.SqlStr = connectionString;
         List<List<string>> orderList = userConnect.DBListOrders(0);  //maybe change to adminConnect for all order list
         ViewBag.Message = "Good job!";
         return View(orderList);
     }
-     public IActionResult Members()
+    public IActionResult Members()
     {
         Program.adminConnect adminConnect = InitAdminConnect();
         List<(int, String)> memberList = adminConnect.DBListMembers();
         return View(memberList);
+    }
+    [HttpGet]
+    //[Route("CreateCustomer/{memberId}")]
+    public IActionResult CreateCustomer(int memberId)
+    {
+        System.Console.WriteLine($"Member id is {memberId}");
+        Customer customer = new Customer(){MemberId=memberId};
+        return View("CreateCustomer",customer);
     }
     
     
@@ -62,6 +70,21 @@ public class AdminController : Controller
         Program.adminConnect adminConnect = InitAdminConnect();
         adminConnect.DBDeleteMember(memberId);
         ViewBag.Message = $"Member {memberId} was deleted.";
+        return View("Confirmation");
+    }
+     [HttpPost]
+    public IActionResult CreateCustomer(Customer customer)
+    {
+        System.Console.WriteLine("postCC");
+        if (ModelState.IsValid)
+        {
+            Customer customerNew = new Customer(customer.MemberId,customer.FirstName,customer.LastName,
+            customer.HomeAddress,customer.Coordinates);
+            Program.adminConnect adminConnect = InitAdminConnect();
+            bool success = adminConnect.DBCreateCustomer(customerNew);
+            ViewBag.Message = success ? "Customer created" : "There was a problem";
+        }
+
         return View("Confirmation");
     }
     public IActionResult Index(MemberLoginModel model)

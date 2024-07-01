@@ -12,6 +12,15 @@ public class CommonController : Controller
     {
         _configuration = configuration;
     }
+    Program.UserSession uSession = new(1,1);
+    private Program.userConnect InitUserConnect()//handles sql init for adminConnect methods
+    {
+        string connectionString = _configuration.GetConnectionString("DefaultConnection");
+        Program.userConnect userConnect = new();
+        userConnect.SqlStr = connectionString;
+        return userConnect;
+    }
+
     /*public IActionResult DynamicForm(string formType)
     {
         DynamicFormModel form = new DynamicFormModel { FormType = formType };
@@ -39,6 +48,7 @@ public class CommonController : Controller
         return View("CreateMember",form);
     }
 
+
     public IActionResult CreateCustomer()
     {
         return View();
@@ -46,29 +56,32 @@ public class CommonController : Controller
     
     public IActionResult Products()
     {
-        string connectionString = _configuration.GetConnectionString("DefaultConnection");
-        Program.UserSession uSession = null;
-        Program.userConnect userConnect = new();
-        userConnect.SqlStr = connectionString;
+        Program.userConnect userConnect = InitUserConnect();
         List<(int, String)> productList = userConnect.DBListItems();
         return View(productList);
     }
-    public IActionResult CreateOrder()
-    {
-        return View();
-    }
+
     public IActionResult MyOrders()
     {
-        return View();
+        Program.userConnect userConnect = InitUserConnect();
+        List<List<string>> orderList = userConnect.DBListOrders(uSession.MemberId);  //maybe change to adminConnect for all order list
+        ViewBag.Message = uSession.MemberId;
+        return View("Orders",orderList);
     }
 
     [HttpPost]
-    public IActionResult DynamicForm(DynamicFormModel form)
+    public IActionResult CreateOrder(int itemId,int quantity)
+    {
+        Program.userConnect userConnect = InitUserConnect();
+        int orderId = userConnect.DBCreateOrder(uSession.CustomerId, itemId, quantity);
+        ViewBag.Message = orderId != null ? $"Created order number {orderId}" : "There was a problem";
+        return View("Confirmation");
+    }
+        public IActionResult DynamicForm(DynamicFormModel form)
     {
         // Handle the submitted data here
         // You can switch based on model.FormType to handle different form submissions
         string connectionString = _configuration.GetConnectionString("DefaultConnection");
-        Program.UserSession uSession = null;
         Program.userConnect userConnect = new();
         userConnect.SqlStr = connectionString;
         ///getting input field values by name

@@ -109,7 +109,7 @@ namespace Heave
             {
                 return (0, 0);
             }
-            public override int DBcreateOrder(int custId, int itemId, int quantity)
+            public override int DBCreateOrder(int custId, int itemId, int quantity)
             {
                 return 0;
 
@@ -166,7 +166,30 @@ namespace Heave
             }
             public override bool DBCreateCustomer(Customer cust)
             {
-                return true;
+                SqlConnection connection = GetConnection(SqlStr);
+                using (connection)
+                {
+                    //IMPORTANT: To construct the SQL command securely while including the execution of the geometry::STPointFromText function directly in the command text (due to the nature of spatial data functions), non spatial data is parameterized while the spatial part is insterted dynamcally.
+                    //SQL STRING BUILD
+                    StringBuilder sb = new();
+                    sb.Append("USE master; ");
+                    sb.Append("INSERT INTO customer (FirstName, LastName, HomeAddress, GeoPoint, DateCreated) VALUES ");
+                    sb.Append("(@fName, @lName, @hAddress, geography::STPointFromText('POINT('+ @Coords +')', 4326), @date);");
+                    String sql = sb.ToString();
+
+                    using (SqlCommand command = new SqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@fName", cust.FirstName);
+                        command.Parameters.AddWithValue("@lName", cust.LastName);
+                        command.Parameters.AddWithValue("@hAddress", cust.HomeAddress);
+                        command.Parameters.AddWithValue("@Coords", cust.Coordinates);
+                        command.Parameters.AddWithValue("@date", cust.DateCreated);
+                        connection.Open();
+                        int rowsAffected = command.ExecuteNonQuery();
+                        Console.WriteLine(rowsAffected + " row(s) inserted");
+                        return rowsAffected > 0;
+                    }
+                }
             }
             public override int DBCreateMember(Member memb)//REDUNDANT FIX RETURN
             {

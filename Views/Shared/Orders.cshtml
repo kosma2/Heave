@@ -1,6 +1,6 @@
 @model List<List<string>>
 
-<h2>Orders</h2>
+<h2>Orders for @ViewBag.Message</h2>
 <table>
     <tr>
         <th>Order ID</th>
@@ -15,7 +15,4 @@
         <td>@order[2]</td>
     </tr>
 }
-</table>
-@if(ViewBag.Message != null){   
-    <p>@ViewBag.Message</p>
-}     
+</table>  

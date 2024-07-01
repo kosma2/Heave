@@ -1,6 +1,6 @@
 namespace Heave
 {
-    class Member
+    public class Member
     {
         public int MemberId { get; set;}
         public string login { get; set; } = "";
@@ -12,5 +12,7 @@ namespace Heave
             login = log;
             pass = passWord;
         }
+        public Member()
+        {}
     }
 }

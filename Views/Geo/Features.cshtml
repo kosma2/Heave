@@ -1,0 +1,13 @@
+@model List<(int, string, string, string)>
+<div id="mapid" style="height: 500px;"></div>
+
+<h2>Features</h2>
+
+    @foreach (var(id, shapeType, pointName, geo) in Model)
+    {
+        <p>@id, @geo</p>
+    }
+@if (ViewBag.Message != null)
+{
+    <p>@ViewBag.Message</p>
+}

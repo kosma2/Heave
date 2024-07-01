@@ -12,7 +12,7 @@ namespace Heave
 
             public abstract void DBdeleteOrder(int orderId);
             public abstract (int,int) InterfaceCreateOrder();
-            public abstract int DBcreateOrder(int custId, int itemId, int quantity);
+            public abstract int DBCreateOrder(int custId, int itemId, int quantity);
             public abstract int DBcreateOrderItem(int orderId, int itemId, int quantity);
             public abstract List<(int ItemId, String ItemName)> DBListItems();
             public abstract void DBAddItem(Item item);

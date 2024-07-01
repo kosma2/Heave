@@ -5,12 +5,22 @@
     <tr>
         <th>ID</th>
         <th>Product</th>
+        <th>Actions</th>
     </tr>
 @foreach ((int, string) product in Model)
 {
+    int itemId = @product.Item1;
+    string itemName = @product.Item2;
     <tr>
-        <td>@product.Item1</td>
-        <td>@product.Item2</td>
+        <td>@itemId</td>
+        <td>@itemName</td>
+        <td>
+            <form asp-action="CreateOrder" asp-controller="Common" method=post>
+            <input type="hidden" name="itemId" value="@itemId" />
+            <input type="text"class="form-control" name="quantity" required />
+            <button type="submit" class="btn btn-primary">buy</button>
+            </form>
+        </td>
     </tr>
 }
 </table>

@@ -2,6 +2,8 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Heave.Models;
 using Microsoft.SqlServer.Types;
+using Newtonsoft.Json;
+
 
 
 namespace Heave.Controllers;
@@ -39,9 +41,8 @@ public class GeoController : Controller
             string geoJson = GeographyConverter.SqlGeographyToGeoJson(sqlGeography);
             cleanPoints.Add(geoJson);
         }
+        return View("Features", JsonConvert.SerializeObject(cleanPoints)); // Ensure this uses Newtonsoft.Json or similar to serialize
 
-        //return Ok(markerList);
-        return View ("Features", cleanPoints);
     }
 
     [HttpPost]

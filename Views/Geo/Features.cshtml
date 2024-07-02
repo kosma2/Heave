@@ -1,12 +1,18 @@
-@model List<(int, string, string, string)>
-<div id="mapid" style="height: 500px;"></div>
+@model string
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map Features</title>
+</head>
+<body>
+    <div id="map" style="width: 600px; height: 400px;"></div>
+    <script>
+        var geoJsonData = @Html.Raw(Model);
+        // Initialize your map and other JS here
+    </script>
+</body>
+</html>
 
-<h2>Features</h2>
-
-    @foreach (var(id, shapeType, pointName, geo) in Model)
-    {
-        <p>@id, @geo</p>
-    }
 @if (ViewBag.Message != null)
 {
     <p>@ViewBag.Message</p>

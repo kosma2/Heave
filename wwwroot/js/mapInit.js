@@ -23,16 +23,15 @@ fetch('/MapData/GetMarkers')
     })
     .catch(error => console.error('Error fetching markers:', error));
 
-
-    
-    function addWktPoint(wktString) {
-        var coords = wktString.split('(')[1].split(')')[0].split(' ');
-        var lng = parseFloat(coords[0]);
-        var lat = parseFloat(coords[1]);
-    
-        var marker = L.marker([lat, lng]).addTo(map);
-        map.setView([lat, lng], 13);
+    function addGeoJsonPoints(geoJsonArray) {
+        geoJsonArray.forEach(jsonStr => {
+            var geoJsonObject = JSON.parse(jsonStr);
+            L.geoJSON(geoJsonObject).addTo(mymap);
+        });
     }
+    
+    // Call this function with the geoJsonData passed from the view
+    addGeoJsonPoints(geoJsonData);
 
-    addWktPoint("POINT (-117.35232639217136 49.496907430701029)");
+   
 

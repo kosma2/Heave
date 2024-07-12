@@ -27,9 +27,9 @@ namespace Heave
     public class Dijkstra
     {
         public Dictionary<Node, double> Distances { get; private set; }      //stores the node's distance from source node
-        public Dictionary<Node, Node> Previous { get; private set; }      //
+        public Dictionary<Node, Node> Previous { get; private set; }      //stores the node's last node
 
-        public void Execute(Node source, List<Node> nodes)
+        public List<Node> ExecuteDij(Node source, List<Node> nodes)
         {
             Distances = new();
             Previous = new Dictionary<Node, Node>();
@@ -100,11 +100,14 @@ namespace Heave
                 foreach (Node node in path)
                 {
                     System.Console.WriteLine(node.Id);
+                    
                 }
+                return path;
             }
             else
             {
                 System.Console.WriteLine("No valid path from source to destination");
+                return null;
             }
           
         }

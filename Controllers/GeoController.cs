@@ -10,43 +10,55 @@ namespace Heave.Controllers;
 
 public class GeoController : Controller
 {
-     private Program.GeoConnect InitGeoConnect()//handles sql init for adminConnect methods
+    private Program.GeoConnect InitGeoConnect()//handles sql init for adminConnect methods
     {
         string connectionString = _configuration.GetConnectionString("DefaultConnection");
         Program.GeoConnect geoConnect = new();
         geoConnect.SqlStr = connectionString;
         return geoConnect;
     }
-     private readonly IConfiguration _configuration;
-        public GeoController(IConfiguration configuration)
-        {
-            _configuration = configuration;
-        }
+    private readonly IConfiguration _configuration;
+    public GeoController(IConfiguration configuration)
+    {
+        _configuration = configuration;
+    }
 
 
     public IActionResult Index()
     {
         return View(new MemberLoginModel());
     }
+    public IActionResult Dijk()
+    {
+        Program.GeoConnect geoConnect = InitGeoConnect();
+        List<Node> nodeList = geoConnect.DBGetGraphData();
+            
+            Dijkstra? dijkstra = new Dijkstra();
+            Node startingNode = nodeList.FirstOrDefault(node => node.Id == "n1");
+            dijkstra.ExecuteDij(startingNode, nodeList);
+
+        return View("Dijk",jsonNodes);
+    }
 
     public IActionResult Features()
     {
         Program.GeoConnect geoConnect = InitGeoConnect();
         List<(int, string, string, string)> markerList = geoConnect.ShowAirMarkers();
-        List<string> cleanPoints = new();
-        foreach (var (ptId, ptType, ptName, geo) in markerList)
-        {        
-            string wkt = geo;
-            SqlGeography sqlGeography = SqlGeography.STGeomFromText(new System.Data.SqlTypes.SqlChars(wkt), 4326);
-            string geoJson = GeographyConverter.SqlGeographyToGeoJson(sqlGeography);
-            cleanPoints.Add(geoJson);
+        List<GeoPoint> formatedPoints = new();
+
+        foreach ((int id, string featType, string pointName, string geo) marker in markerList)
+        {
+            GeoPoint pt = new(marker.pointName, marker.geo);
+            formatedPoints.Add(pt);
         }
-        return View("Features", JsonConvert.SerializeObject(cleanPoints)); // Ensure this uses Newtonsoft.Json or similar to serialize
+        string jsnString = geoConnect.ConvertToGeoJson(formatedPoints);
+
+        return View("Features",jsnString);
 
     }
 
     [HttpPost]
-        
+
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

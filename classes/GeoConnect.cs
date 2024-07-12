@@ -1,7 +1,10 @@
 using System.Data;
 using System.Text;
-using Azure.Core.GeoJson;
 using Microsoft.Data.SqlClient;
+using NetTopologySuite;
+using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
 
 namespace Heave
 {
@@ -52,7 +55,7 @@ namespace Heave
                     }
                 }
             }
-            
+
             public void DBDeleteAirMarker(int markerId)
             {
                 SqlConnection connection = GetConnection(SqlStr);
@@ -73,7 +76,7 @@ namespace Heave
 
             public List<(int, string, string, string)> ShowAirMarkers()  //pointId, ShapeName, MarkerName, Geo
             {
-                List<(int, string, string,string)> markerInfo = new();     // List to hold all results
+                List<(int, string, string, string)> markerInfo = new();     // List to hold all results
                 using (SqlConnection connection = GetConnection(SqlStr))
                 {
                     String sql = "SELECT ID, ShapeName, MarkerName, GeoLocation.STAsText() AS GeoLocText FROM airmarker";
@@ -259,23 +262,7 @@ namespace Heave
             {
                 return (0, 0);
             }
-            
-            /*public override void Connect(String connString)
-            {
-                try
-                {
-                    System.Console.WriteLine("Connecting to database...");
-                    using SqlConnection connection = new(connString);
-                    connection.Open();
-                    System.Console.WriteLine("connection open");
-                }
-                catch (SqlException e)
-                {
-                    Console.WriteLine(e.ToString());
-                    System.Console.WriteLine("connection returned nyull");
-                    //return null;
-                }
-            }*/
+
             public override List<(int ItemId, String ItemName)> DBListItems() // dispays all items in inventory [itemId][itemName]
             {
                 List<(int, string)> idAndName = new();
@@ -329,7 +316,7 @@ namespace Heave
             {
                 return true;
             }
-            
+
             public override void DBAddItem(Item item)
             {
                 SqlConnection connection = GetConnection(SqlStr);
@@ -371,15 +358,47 @@ namespace Heave
                     }
                 }
             }
-            
-                       public override decimal GetItemPrice(int itemId)
+
+            public override decimal GetItemPrice(int itemId)
             { return 0; }
             public override int DBcreateOrderItem(int orderId, int itemId, int quantity)
             {
                 return 0;
             }
 
-            public List<Node> DBGetGraphData()
+
+            public string ConvertToGeoJson(List<GeoPoint> points)
+            {
+                // Create a geometry factory with SRID 4326 for geographic coordinates
+                GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+                FeatureCollection? featureCollection = new FeatureCollection();
+                WKTReader? wktReader = new WKTReader(geometryFactory);
+
+                foreach (var point in points)
+                {
+                    System.Console.WriteLine(point.WKTPoint);
+                    // Read the geography from the WKT
+                    Geometry? geometry = wktReader.Read(point.WKTPoint);
+
+                    // Ensure the geometry is set with the correct SRID
+                    if (geometry.SRID != 4326)
+                    {
+                        geometry.SRID = 4326;
+                    }
+
+                    // Create a feature with the geometry and an attributes table
+                    Feature? feature = new Feature(geometry, new AttributesTable());
+                    feature.Attributes.Add("PointName", point.PointName);
+                    featureCollection.Add(feature);
+                }
+
+                // Write the feature collection to a GeoJSON string
+                GeoJsonWriter? geoJsonWriter = new GeoJsonWriter();
+                return geoJsonWriter.Write(featureCollection);
+            }
+
+
+            public List<Node> DBGetGraphData()  // this uses a stored MSSQL PROCEDURE to retrieve nodes along with their edges
             {
                 List<Node> nodes = new();     // List to hold all results
                 using (SqlConnection connection = GetConnection(SqlStr))
@@ -412,8 +431,8 @@ namespace Heave
                                     Node endiNode = nodes.FirstOrDefault(node => node.Id == endNode);
                                     //if (startNode != null && endNode != null)
                                     //{
-                                        Edge edge = new Edge(startNode, endiNode, distance);
-                                        startNode.Edges.Add(edge);
+                                    Edge edge = new Edge(startNode, endiNode, distance);
+                                    startNode.Edges.Add(edge);
                                     //}
                                     //else { System.Console.WriteLine("this id does not exist in nodes List"); }
 
@@ -424,8 +443,8 @@ namespace Heave
                 }
                 return nodes;
             }
-             public override int DBCreateMember(Member memb)//REDUNDANT FIX RETURN
-            {return 4;}
+            public override int DBCreateMember(Member memb)//REDUNDANT FIX RETURN
+            { return 4; }
             public override int DBCreateOrder(int custId, int itemId, int quantity)
             {
                 return 0;

@@ -28,16 +28,18 @@ public class GeoController : Controller
     {
         return View(new MemberLoginModel());
     }
-    public IActionResult Dijk()
+    public IActionResult Dijkstra()
     {
         Program.GeoConnect geoConnect = InitGeoConnect();
         List<Node> nodeList = geoConnect.DBGetGraphData();
             
             Dijkstra? dijkstra = new Dijkstra();
             Node startingNode = nodeList.FirstOrDefault(node => node.Id == "n1");
-            dijkstra.ExecuteDij(startingNode, nodeList);
-
-        return View("Dijk",jsonNodes);
+            List<Node> pathNodeList = dijkstra.ExecuteDij(startingNode, nodeList);
+            List<GeoPoint> geoPoints = geoConnect.NodesToGeoPoints(pathNodeList);
+            
+            string jsonString = geoConnect.ConvertToGeoJson(geoPoints);
+        return View("Dijk",jsonString);
     }
 
     public IActionResult Features()

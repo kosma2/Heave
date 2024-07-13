@@ -365,7 +365,18 @@ namespace Heave
             {
                 return 0;
             }
-
+            public List<GeoPoint> NodesToGeoPoints(List<Node> nodeList)
+            {
+                List<GeoPoint> geoPoints = new List<GeoPoint>();
+                foreach(Node node in nodeList)
+                {
+                    string wkt = node.GeoPoint;
+                    string ptName = node.Id;
+                    GeoPoint pt = new(ptName,wkt);
+                    geoPoints.Add(pt);
+                }
+                return geoPoints;
+            }
 
             public string ConvertToGeoJson(List<GeoPoint> points)
             {
@@ -414,7 +425,7 @@ namespace Heave
                                 string markerName = reader.GetString(1);
                                 string geoData = reader.GetString(2);
                                 System.Console.WriteLine($"Marker name {markerName}, Geo {geoData}");
-                                Node nod = new Node(markerName);//id is node name
+                                Node nod = new Node(markerName,geoData);//id is node name
                                 System.Console.WriteLine("node " + nod.Id + " created");
                                 nodes.Add(nod);
                             }

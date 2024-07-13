@@ -3,11 +3,13 @@ namespace Heave
     public class Node
     {
         public string Id { get; }
+        public string GeoPoint { get; }
         public List<Edge> Edges { get; set; }     //connections to neighbours
 
-        public Node(string id)
+        public Node(string id, string geoPoint)
         {
             Id = id;
+            GeoPoint = geoPoint;
             Edges = new List<Edge>();
         }
     }

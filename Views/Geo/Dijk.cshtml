@@ -4,44 +4,83 @@
 
 <head>
     <title>Map Features</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
 </head>
 
 <body>
     <div id="map" style="width: 100%; height: 700px;"></div>
     <script>
         var geoJsonData = @Html.Raw(Model); // Embed the model data directly in the page
+
         document.addEventListener('DOMContentLoaded', function () {
             var mymap = L.map('map').setView([49.4925, -117.2942], 13);
-
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 maxZoom: 18,
             }).addTo(mymap);
 
-            // Add the GeoJSON data directly to the map
-            L.geoJSON(geoJsonData, {
-                onEachFeature: function (feature, layer) {
-                    if (feature.properties && feature.properties.PointName) {
-                        layer.bindPopup(feature.properties.PointName);
+            L.geoJSON(geoJsonData).addTo(mymap);
+
+            //marker animation
+
+            var marker = L.marker([49.4925, -117.2942]).addTo(mymap).bindPopup("Initial Position").openPopup();
+            var connection = new signalR.HubConnectionBuilder().withUrl("/coordinateHub").build();
+            var animationQueue = [];
+            var animating = false;
+
+            function animateMarker() {
+                if (animationQueue.length === 0) {
+                    animating = false;
+                    return;
+                }
+
+                animating = true;
+                var newLatLng = animationQueue.shift();
+                var startLatLng = marker.getLatLng();
+                var duration = 1000; // Adjust duration based on frequency and distance if necessary
+                var startTime;
+
+                function animate(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    var progress = (timestamp - startTime) / duration;
+                    var lat = startLatLng.lat + (newLatLng.lat - startLatLng.lat) * progress;
+                    var lng = startLatLng.lng + (newLatLng.lng - startLatLng.lng) * progress;
+                    marker.setLatLng([lat, lng]).update();
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
                     } else {
-                        console.log("no description found"); // Logs this message to the browser console
+                        animating = false;
+                        animateMarker(); // Start next animation if there's more in the queue
                     }
                 }
-            }).addTo(mymap);
+                requestAnimationFrame(animate);
+            }
 
-            // Array to store the coordinates of each point
-            var latlngs = [];
+            connection.on("ReceiveCoordinate", function (coord) {
+                console.log("Received coordinate:", coord);
+                var cleanCoord = coord.replace(/[()]/g, '');
+                var parts = cleanCoord.split(', ');
+                var lat = parseFloat(parts[0]);
+                var lng = parseFloat(parts[1]);
 
-            // Extract coordinates from GeoJSON
-            geoJsonData.features.forEach(function (feature) {
-                if (feature.geometry.type === 'Point') {
-                    latlngs.push([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    animationQueue.push({ lat: lat, lng: lng });
+                    if (!animating) {
+                        animateMarker();
+                    }
+                } else {
+                    console.error("Invalid coordinates:", parts);
                 }
             });
 
-            // Create a polyline and add it to the map
-            var polyline = L.polyline(latlngs, { color: 'red' }).addTo(mymap);
+            connection.start().then(function () {
+                console.log("SignalR connection established.");
+            }).catch(function (err) {
+                console.error("SignalR connection error:", err.toString());
+            });
         });
+
     </script>
     @if (ViewBag.Message != null)
     {

@@ -2,8 +2,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddSignalR();  // Add SignalR services
 
-var app = builder.Build();
+
+WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -15,10 +17,11 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthorization();
+
+// Map SignalR Hubs
+app.MapHub<CoordinateHub>("/coordinateHub");
 
 app.MapControllerRoute(
     name: "default",

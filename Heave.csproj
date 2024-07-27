@@ -10,5 +10,8 @@
     <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="4.0.0"/>
     <PackageReference Include="Microsoft.SqlServer.Types" Version="160.1000.6"/>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+    <PackageReference Include="NetTopologySuite.CoordinateSystems" Version="1.15.3"/>
+    <PackageReference Include="NetTopologySuite.Core" Version="1.15.3"/>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0"/>
   </ItemGroup>
 </Project>

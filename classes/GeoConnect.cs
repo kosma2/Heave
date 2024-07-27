@@ -130,9 +130,9 @@ namespace Heave
                                 string marker1GeoPoint = reader.GetString(reader.GetOrdinal("Marker1GeoPoint"));
                                 string marker2GeoPoint = reader.GetString(reader.GetOrdinal("Marker2GeoPoint"));
 
-                                Console.WriteLine($"Distance in Meters: {distance}");
+                                /*Console.WriteLine($"Distance in Meters: {distance}");
                                 Console.WriteLine($"Marker 1 GeoPoint: {marker1GeoPoint}");
-                                Console.WriteLine($"Marker 2 GeoPoint: {marker2GeoPoint}");
+                                Console.WriteLine($"Marker 2 GeoPoint: {marker2GeoPoint}");*/
                                 return distance; // The distance in meters
                             }
                             else
@@ -368,17 +368,33 @@ namespace Heave
             public List<GeoPoint> NodesToGeoPoints(List<Node> nodeList)
             {
                 List<GeoPoint> geoPoints = new List<GeoPoint>();
-                foreach(Node node in nodeList)
+                foreach (Node node in nodeList)
                 {
                     string wkt = node.GeoPoint;
                     string ptName = node.Id;
-                    GeoPoint pt = new(ptName,wkt);
+                    GeoPoint pt = new(ptName, wkt);
                     geoPoints.Add(pt);
                 }
                 return geoPoints;
             }
-
-            public string ConvertToGeoJson(List<GeoPoint> points)
+            public List<Coordinate> NodesToCoordinates(List<Node> nodeList) //lat and long need to be reversed here. Coordinate and WKT do it different.
+            {
+                List<Coordinate> geoPoints = new List<Coordinate>();
+                foreach (Node node in nodeList)
+                {
+                    string wkt = node.GeoPoint;
+                    string ptName = node.Id;
+                    WKTReader reader = new();
+                    Coordinate revPt = reader.Read(wkt).Coordinate;
+                    double x = revPt.X;
+                    double y = revPt.Y;
+                    Coordinate pt = new(y,x);
+                    //GeoPoint pt = new(ptName,wkt);
+                    geoPoints.Add(pt);
+                }
+                return geoPoints;
+            }
+            public string ConvertPointsToGeoJson(List<GeoPoint> points)
             {
                 // Create a geometry factory with SRID 4326 for geographic coordinates
                 GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
@@ -387,7 +403,60 @@ namespace Heave
 
                 foreach (var point in points)
                 {
-                    System.Console.WriteLine(point.WKTPoint);
+                    // Read the geography from the WKT
+                    Geometry? geometry = wktReader.Read(point.WKTPoint);
+
+                    // Ensure the geometry is set with the correct SRID
+                    if (geometry.SRID != 4326)
+                    {
+                        geometry.SRID = 4326;
+                    }
+
+                    // Create a feature with the geometry and an attributes table
+                    Feature? feature = new Feature(geometry, new AttributesTable());
+                    feature.Attributes.Add("PointName", point.PointName);
+                    featureCollection.Add(feature);
+                }
+
+                // Write the feature collection to a GeoJSON string
+                GeoJsonWriter? geoJsonWriter = new GeoJsonWriter();
+                return geoJsonWriter.Write(featureCollection);
+            }
+            public string ConvertCoordsToGeoJson(List<Coordinate> coordinates)
+            {
+                // Create a geometry factory with SRID 4326 for geographic coordinates
+                GeometryFactory geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+                FeatureCollection featureCollection = new FeatureCollection();
+
+                foreach (var coordinate in coordinates)
+                {
+                    // Create a point geometry from the coordinate
+                    Point point = geometryFactory.CreatePoint(coordinate);
+
+                    // Ensure the geometry is set with the correct SRID
+                    if (point.SRID != 4326)
+                    {
+                        point.SRID = 4326;
+                    }
+
+                    // Create a feature with the geometry and an empty attributes table
+                    Feature feature = new Feature(point, new AttributesTable());
+                    featureCollection.Add(feature);
+                }
+
+                // Write the feature collection to a GeoJSON string
+                GeoJsonWriter geoJsonWriter = new GeoJsonWriter();
+                return geoJsonWriter.Write(featureCollection);
+            }
+            public string ConvertCoordsToGeoJson(List<GeoPoint> points)
+            {
+                // Create a geometry factory with SRID 4326 for geographic coordinates
+                GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+                FeatureCollection? featureCollection = new FeatureCollection();
+                WKTReader? wktReader = new WKTReader(geometryFactory);
+
+                foreach (var point in points)
+                {
                     // Read the geography from the WKT
                     Geometry? geometry = wktReader.Read(point.WKTPoint);
 
@@ -424,9 +493,9 @@ namespace Heave
                                 int nodeId = reader.GetInt32(0);
                                 string markerName = reader.GetString(1);
                                 string geoData = reader.GetString(2);
-                                System.Console.WriteLine($"Marker name {markerName}, Geo {geoData}");
-                                Node nod = new Node(markerName,geoData);//id is node name
-                                System.Console.WriteLine("node " + nod.Id + " created");
+                                //System.Console.WriteLine($"Marker name {markerName}, Geo {geoData}");
+                                Node nod = new Node(markerName, geoData);//id is node name
+                                //System.Console.WriteLine("node " + nod.Id + " created");
                                 nodes.Add(nod);
                             }
                             if (reader.NextResult())
@@ -436,7 +505,7 @@ namespace Heave
                                     string strtNode = reader.GetString(0);
                                     string endNode = reader.GetString(1);
                                     double distance = reader.GetDouble(2);
-                                    System.Console.WriteLine($"StartId {strtNode}, EndNode {endNode}, Distance {distance}");
+                                    //System.Console.WriteLine($"StartId {strtNode}, EndNode {endNode}, Distance {distance}");
 
                                     Node startNode = nodes.FirstOrDefault(node => node.Id == strtNode);
                                     Node endiNode = nodes.FirstOrDefault(node => node.Id == endNode);

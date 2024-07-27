@@ -28,7 +28,7 @@
                     <input type="hidden" name="memberId" value="@memberId" />
                     <button type="submit" class="btn btn-danger">delete</button>
                 </form>
-                <form asp-action="CreateCustomer" asp-controller="Admin" asp-route-memberId="@memberId" method="get">
+                <form asp-action="CreateCustomer" asp-controller="Admin" asp-route-memberId="@memberId" asp-route-memName="@memName" method="get">
                     <input type="submit" value="Create Customer" /></form>
             </td>
         </tr>

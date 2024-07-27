@@ -47,9 +47,9 @@ public class AdminController : Controller
         List<(int, String)> memberList = adminConnect.DBListMembers();
         return View(memberList);
     }
-    [HttpGet]
-    //[Route("CreateCustomer/{memberId}")]
-    public IActionResult CreateCustomer(int memberId)
+   [HttpGet]
+    [Route("CreateCustomer/{memberId}")]
+    public IActionResult CreateCustomer(int memberId, string memName)
     {
         System.Console.WriteLine($"Member id is {memberId}");
         Customer customer = new Customer(){MemberId=memberId};
@@ -73,6 +73,7 @@ public class AdminController : Controller
         return View("Confirmation");
     }
      [HttpPost]
+     [Route("CreateCustomer")]
     public IActionResult CreateCustomer(Customer customer)
     {
         System.Console.WriteLine("postCC");

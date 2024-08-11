@@ -11,7 +11,7 @@ public class AdminController : Controller
     {
         _configuration = configuration;
     }
-    Program.UserSession uSession = new(0,0);//
+    Program.UserSession uSession = new(0, 0);//
 
 
     private Program.adminConnect InitAdminConnect()//handles sql init for adminConnect methods
@@ -29,7 +29,7 @@ public class AdminController : Controller
     public IActionResult Customers()
     {
         Program.adminConnect adminConnect = InitAdminConnect();
-        List<(int,String)> customerList = adminConnect.ShowCustomers();
+        List<(int, String)> customerList = adminConnect.ShowCustomers();
         return View(customerList);
     }
     public IActionResult Orders()
@@ -44,21 +44,21 @@ public class AdminController : Controller
     public IActionResult Members()
     {
         Program.adminConnect adminConnect = InitAdminConnect();
-        List<(int, String)> memberList = adminConnect.DBListMembers();
+        List<(int, String, int)> memberList = adminConnect.DBListMembers();
         return View(memberList);
     }
-   [HttpGet]
+    [HttpGet]
     [Route("CreateCustomer/{memberId}")]
     public IActionResult CreateCustomer(int memberId, string memName)
     {
         System.Console.WriteLine($"Member id is {memberId}");
-        Customer customer = new Customer(){MemberId=memberId};
-        return View("CreateCustomer",customer);
+        Customer customer = new Customer() { MemberId = memberId };
+        return View("CreateCustomer", customer);
     }
-    
-    
+
+
     [HttpPost]
-    public IActionResult UpdateRole(int memberId,int role)
+    public IActionResult UpdateRole(int memberId, int role)
     {
         Program.adminConnect adminConnect = InitAdminConnect();
         bool success = adminConnect.DBUpdateMemberRole(memberId, role);
@@ -72,15 +72,16 @@ public class AdminController : Controller
         ViewBag.Message = $"Member {memberId} was deleted.";
         return View("Confirmation");
     }
-     [HttpPost]
-     [Route("CreateCustomer")]
+
+    [HttpPost]
+    [Route("CreateCustomer/{memberId}")]
     public IActionResult CreateCustomer(Customer customer)
     {
-        System.Console.WriteLine("postCC");
+        System.Console.WriteLine("coordinate "+ customer.Coordinates);
         if (ModelState.IsValid)
         {
-            Customer customerNew = new Customer(customer.MemberId,customer.FirstName,customer.LastName,
-            customer.HomeAddress,customer.Coordinates);
+            Customer customerNew = new Customer(customer.MemberId, customer.FirstName, customer.LastName,
+            customer.HomeAddress, customer.Coordinates);
             Program.adminConnect adminConnect = InitAdminConnect();
             bool success = adminConnect.DBCreateCustomer(customerNew);
             ViewBag.Message = success ? "Customer created" : "There was a problem";

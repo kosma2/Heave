@@ -377,7 +377,7 @@ namespace Heave
                 }
                 return geoPoints;
             }
-            public List<Coordinate> NodesToCoordinates(List<Node> nodeList) //lat and long need to be reversed here. Coordinate and WKT do it different.
+            public List<Coordinate> NodesToCoordinates(List<Node> nodeList) 
             {
                 List<Coordinate> geoPoints = new List<Coordinate>();
                 foreach (Node node in nodeList)
@@ -388,7 +388,7 @@ namespace Heave
                     Coordinate revPt = reader.Read(wkt).Coordinate;
                     double x = revPt.X;
                     double y = revPt.Y;
-                    Coordinate pt = new(y,x);
+                    Coordinate pt = new(x,y);
                     //GeoPoint pt = new(ptName,wkt);
                     geoPoints.Add(pt);
                 }
@@ -477,14 +477,15 @@ namespace Heave
                 return geoJsonWriter.Write(featureCollection);
             }
 
-
-            public List<Node> DBGetGraphData()  // this uses a stored MSSQL PROCEDURE to retrieve nodes along with their edges
+            public List<Node> DBGetGraphData(int customerId)  // this uses a stored MSSQL PROCEDURE to retrieve all the nodes along with their edges
             {
                 List<Node> nodes = new();     // List to hold all results
                 using (SqlConnection connection = GetConnection(SqlStr))
                 {
                     using (SqlCommand command = new("GetGraphData", connection))// this GEO MSSQL procedure returns graph nodes and edges
                     {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.Add(new SqlParameter("@customerId", customerId));
                         connection.Open();
                         using (SqlDataReader reader = command.ExecuteReader())
                         {

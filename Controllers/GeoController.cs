@@ -64,7 +64,7 @@ public class GeoController : Controller
     public IActionResult Dijkstra()
     {
         Program.GeoConnect geoConnect = InitGeoConnect();
-        List<Node> nodeList = geoConnect.DBGetGraphData();
+        List<Node> nodeList = geoConnect.DBGetGraphData(1012);
 
         Dijkstra? dijkstra = new Dijkstra();
         Node startingNode = nodeList.FirstOrDefault(node => node.Id == "n1");

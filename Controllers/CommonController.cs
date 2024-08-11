@@ -48,12 +48,7 @@ public class CommonController : Controller
         return View("CreateMember",form);
     }
 
-
-    public IActionResult CreateCustomer()
-    {
-        return View();
-    }
-    
+       
     public IActionResult Products()
     {
         Program.userConnect userConnect = InitUserConnect();

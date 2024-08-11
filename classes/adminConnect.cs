@@ -9,34 +9,34 @@ namespace Heave
         {
             public UserSession CurrentSession { get; private set; }
 
-            public override List<(int,string)> ShowCustomers()
+            public override List<(int, string)> ShowCustomers()
             {
-                List<(int,string)> custInfo= new();
+                List<(int, string)> custInfo = new();
                 using (SqlConnection connection = GetConnection(SqlStr))
                 {
                     String sql = "SELECT CustomerId, LastName FROM customer";
                     using (SqlCommand command = new(sql, connection))
                     {
                         connection.Open();
-                        using(SqlDataReader reader = command.ExecuteReader())
+                        using (SqlDataReader reader = command.ExecuteReader())
                         {
-                            while(reader.Read())
+                            while (reader.Read())
                             {
                                 int custId = reader.GetInt32(reader.GetOrdinal("CustomerId"));
                                 string custName = reader.GetString(reader.GetOrdinal("LastName"));
-                                custInfo.Add((custId,custName));
+                                custInfo.Add((custId, custName));
                             }
                             return custInfo;
                         }
                     }
                 }
             }
-            public List<(int ItemId, String ItemName)> DBListMembers() // dispays mambers in tuples (memId, login)
+            public List<(int memberId, String memberName, int memRole)> DBListMembers() // displays members in tuples (memId, login, role-0for mem, 1 for admin, 2 for customer)
             {
                 SqlConnection connecti = GetConnection(SqlStr);
                 using (connecti)
                 {
-                    String sql = "SELECT MemberId, Login FROM Member;"; 
+                    String sql = "SELECT MemberId, Login, Role FROM Member;";
                     using (SqlCommand command = new SqlCommand(sql, connecti))
                     {
                         connecti.Open();
@@ -45,14 +45,21 @@ namespace Heave
                             if (reader.HasRows)
                             {
                                 int rowCount = 0;
-                                List<(int,string)> idAndLogin = new();
+                                List<(int, string, int)> memInfo = new();
                                 while (reader.Read())
                                 {
+                                    int memRole = 1;
                                     int memId = Convert.ToInt32(reader["MemberId"]);
                                     string memLogin = reader["Login"].ToString();
-                                    idAndLogin.Add((memId,memLogin));
+                                    int? memRol = reader["Role"] != DBNull.Value ? Convert.ToInt32(reader["Role"]) : (int?)null;
+                                    if (memRol == null)
+                                    {
+                                        memRole = 0;
+                                    }
+
+                                    memInfo.Add((memId, memLogin, memRole));
                                 }
-                                return idAndLogin;
+                                return memInfo;
                             }
                             else
                             {
@@ -63,7 +70,8 @@ namespace Heave
                         }
                     }
                 }
-            }            public override string GetItemName(int itemId)
+            }
+            public override string GetItemName(int itemId)
             {
                 using (SqlConnection connection = GetConnection(SqlStr))
                 {
@@ -114,7 +122,7 @@ namespace Heave
                 return 0;
 
             }
-            
+
             public override List<(int ItemId, String ItemName)> DBListItems() // dispays all items in inventory [itemId][itemName]
             {
                 List<(int, string)> idAndName = new();
@@ -182,7 +190,7 @@ namespace Heave
                         command.Parameters.AddWithValue("@fName", cust.FirstName);
                         command.Parameters.AddWithValue("@lName", cust.LastName);
                         command.Parameters.AddWithValue("@hAddress", cust.HomeAddress);
-                        command.Parameters.AddWithValue("@Coords", cust.Coordinates);
+                        command.Parameters.AddWithValue("@Coords", cust.Coordinates);//format (long lat) eg.  -117.29658128341528 49.477015693801576 
                         command.Parameters.AddWithValue("@date", cust.DateCreated);
                         connection.Open();
                         int rowsAffected = command.ExecuteNonQuery();

@@ -11,7 +11,7 @@
     <div id="map" style="width: 100%; height: 700px;"></div>
     <script>
         var geoJsonData = @Html.Raw(Model); // Embed the model data directly in the page
-
+        console.log(geoJsonData);
         document.addEventListener('DOMContentLoaded', function () {
             var mymap = L.map('map').setView([49.4925, -117.2942], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -61,8 +61,8 @@
                 console.log("Received coordinate:", coord);
                 var cleanCoord = coord.replace(/[()]/g, '');
                 var parts = cleanCoord.split(', ');
-                var lat = parseFloat(parts[0]);
-                var lng = parseFloat(parts[1]);
+                var lat = parseFloat(parts[1]);
+                var lng = parseFloat(parts[0]);
 
                 if (!isNaN(lat) && !isNaN(lng)) {
                     animationQueue.push({ lat: lat, lng: lng });

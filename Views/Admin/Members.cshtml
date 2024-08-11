@@ -1,4 +1,4 @@
-@model List<(int,String)>
+@model List<(int,String, int)>
 
 <h2>Members</h2>
 <table>
@@ -7,19 +7,20 @@
         <th>Member</th>
         <th>Actions</th>
     </tr>
-    @foreach ((int, string) member in Model)
+    @foreach ((int, string,int) member in Model)
     {
         int memberId = member.Item1;
         string memName = member.Item2;
+        int memberRole = member.Item3;
         <tr>
             <td>@memberId</td>
             <td><a asp-action="MemberInfo" asp-controller="Common" asp-route-memberId="@memberId" class="btn btn-danger">
-                    View @memName</a>
+                    View @memName</a>, @memberRole
             <td>
                 <form asp-action="UpdateRole" asp-controller="Admin" method="post" style="display: inline-block;">
                     <input type="hidden" name="memberId" value="@memberId" />
                     <select name="role" class="form-select form-select-sm" aria-label=".form-select-sm example">
-                        <option value="0">Admin</option>
+                        <option value="1">Admin</option>
                         <option value="2">Customer</option>
                     </select>
                     <button type="submit" class="btn btn-primary">Update Role</button>
@@ -28,8 +29,11 @@
                     <input type="hidden" name="memberId" value="@memberId" />
                     <button type="submit" class="btn btn-danger">delete</button>
                 </form>
+                @if(memberRole != 2)
+                {
                 <form asp-action="CreateCustomer" asp-controller="Admin" asp-route-memberId="@memberId" asp-route-memName="@memName" method="get">
                     <input type="submit" value="Create Customer" /></form>
+                }
             </td>
         </tr>
     }

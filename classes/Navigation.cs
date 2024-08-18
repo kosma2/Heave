@@ -31,7 +31,7 @@ namespace Heave
         public Dictionary<Node, double> Distances { get; private set; }      //stores the node's distance from source node
         public Dictionary<Node, Node> Previous { get; private set; }      //stores the node's last node
 
-        public List<Node> ExecuteDij(Node source, List<Node> nodes)
+        public List<Node> ExecuteDij(Node source, List<Node> nodes,string custId)
         {
             Distances = new();
             Previous = new Dictionary<Node, Node>();
@@ -87,7 +87,7 @@ namespace Heave
                 }
             }*/
             List<Node> path = new();
-            Node currentNode = Previous.Keys.FirstOrDefault(node => node.Id == "n9");
+            Node currentNode = Previous.Keys.FirstOrDefault(node => node.Id == custId);
             if (Previous.ContainsKey(currentNode) && Previous[currentNode] != null)
             {
                 while (currentNode != null && currentNode != source)

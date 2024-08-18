@@ -13,7 +13,166 @@ namespace Heave
         public class GeoConnect : DbConnection
         {
             public UserSession CurrentSession { get; private set; }
-            public void DBCreateGeoObject(string GeomType, string MarkerName, List<string> PointList, int Buffer) // INSERTS a GeoSpatial geometry
+            public List<GeoPoint> NodesToGeoPoints(List<Node> nodeList)
+            {
+                List<GeoPoint> geoPoints = new List<GeoPoint>();
+                foreach (Node node in nodeList)
+                {
+                    string wkt = node.GeoPoint;
+                    string ptName = node.Id;
+                    GeoPoint pt = new(ptName, wkt);
+                    geoPoints.Add(pt);
+                }
+                return geoPoints;
+            }
+            public List<Coordinate> NodesToCoordinates(List<Node> nodeList)
+            {
+                List<Coordinate> geoPoints = new List<Coordinate>();
+                foreach (Node node in nodeList)
+                {
+                    string wkt = node.GeoPoint;
+                    string ptName = node.Id;
+                    WKTReader reader = new();
+                    Coordinate revPt = reader.Read(wkt).Coordinate;
+                    double x = revPt.X;
+                    double y = revPt.Y;
+                    Coordinate pt = new(x, y);
+                    //GeoPoint pt = new(ptName,wkt);
+                    geoPoints.Add(pt);
+                }
+                return geoPoints;
+            }
+            public string ConvertPointsToGeoJson(List<GeoPoint> points)
+            {
+                // Create a geometry factory with SRID 4326 for geographic coordinates
+                GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+                FeatureCollection? featureCollection = new FeatureCollection();
+                WKTReader? wktReader = new WKTReader(geometryFactory);
+
+                foreach (var point in points)
+                {
+                    // Read the geography from the WKT
+                    Geometry? geometry = wktReader.Read(point.WKTPoint);
+
+                    // Ensure the geometry is set with the correct SRID
+                    if (geometry.SRID != 4326)
+                    {
+                        geometry.SRID = 4326;
+                    }
+
+                    // Create a feature with the geometry and an attributes table
+                    Feature? feature = new Feature(geometry, new AttributesTable());
+                    feature.Attributes.Add("PointName", point.PointName);
+                    featureCollection.Add(feature);
+                }
+
+                // Write the feature collection to a GeoJSON string
+                GeoJsonWriter? geoJsonWriter = new GeoJsonWriter();
+                return geoJsonWriter.Write(featureCollection);
+            }
+            public string ConvertCoordsToGeoJson(List<Coordinate> coordinates)
+            {
+                // Create a geometry factory with SRID 4326 for geographic coordinates
+                GeometryFactory geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+                FeatureCollection featureCollection = new FeatureCollection();
+
+                foreach (var coordinate in coordinates)
+                {
+                    // Create a point geometry from the coordinate
+                    Point point = geometryFactory.CreatePoint(coordinate);
+
+                    // Ensure the geometry is set with the correct SRID
+                    if (point.SRID != 4326)
+                    {
+                        point.SRID = 4326;
+                    }
+
+                    // Create a feature with the geometry and an empty attributes table
+                    Feature feature = new Feature(point, new AttributesTable());
+                    featureCollection.Add(feature);
+                }
+
+                // Write the feature collection to a GeoJSON string
+                GeoJsonWriter geoJsonWriter = new GeoJsonWriter();
+                return geoJsonWriter.Write(featureCollection);
+            }
+            public string ConvertCoordsToGeoJson(List<GeoPoint> points)
+            {
+                // Create a geometry factory with SRID 4326 for geographic coordinates
+                GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+                FeatureCollection? featureCollection = new FeatureCollection();
+                WKTReader? wktReader = new WKTReader(geometryFactory);
+
+                foreach (var point in points)
+                {
+                    // Read the geography from the WKT
+                    Geometry? geometry = wktReader.Read(point.WKTPoint);
+
+                    // Ensure the geometry is set with the correct SRID
+                    if (geometry.SRID != 4326)
+                    {
+                        geometry.SRID = 4326;
+                    }
+
+                    // Create a feature with the geometry and an attributes table
+                    Feature? feature = new Feature(geometry, new AttributesTable());
+                    feature.Attributes.Add("PointName", point.PointName);
+                    featureCollection.Add(feature);
+                }
+
+                // Write the feature collection to a GeoJSON string
+                GeoJsonWriter? geoJsonWriter = new GeoJsonWriter();
+                return geoJsonWriter.Write(featureCollection);
+            }
+
+            public List<Node> DBGetGraphData(int customerId)  // this uses a stored MSSQL PROCEDURE to retrieve all the nodes along with their edges
+            {
+                List<Node> nodes = new();     // List to hold all results
+                using (SqlConnection connection = GetConnection(SqlStr))
+                {
+                    using (SqlCommand command = new("GetGraphData", connection))// this GEO MSSQL procedure returns graph nodes and edges
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.Add(new SqlParameter("@customerId", customerId));
+                        connection.Open();
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                int nodeId = reader.GetInt32(0);
+                                string markerName = reader.GetString(1);
+                                string geoData = reader.GetString(2);
+                                //System.Console.WriteLine($"Marker name {markerName}, Geo {geoData}");
+                                Node nod = new Node(markerName, geoData);//id is node name
+                                //System.Console.WriteLine("node " + nod.Id + " created");
+                                nodes.Add(nod);
+                            }
+                            if (reader.NextResult())
+                            {
+                                while (reader.Read())
+                                {
+                                    string strtNode = reader.GetString(0);
+                                    string endNode = reader.GetString(1);
+                                    double distance = reader.GetDouble(2);
+                                    //System.Console.WriteLine($"StartId {strtNode}, EndNode {endNode}, Distance {distance}");
+
+                                    Node startNode = nodes.FirstOrDefault(node => node.Id == strtNode);
+                                    Node endiNode = nodes.FirstOrDefault(node => node.Id == endNode);
+                                    //if (startNode != null && endNode != null)
+                                    //{
+                                    Edge edge = new Edge(startNode, endiNode, distance);
+                                    startNode.Edges.Add(edge);
+                                    //}
+                                    //else { System.Console.WriteLine("this id does not exist in nodes List"); }
+
+                                }
+                            }
+                        }
+                    }
+                }
+                return nodes;
+            }
+            public bool DBCreateGeoObject(string GeomType, string MarkerName, List<string> PointList, int Buffer) // INSERTS a GeoSpatial geometry
             {
                 String SQLString = "";
                 StringBuilder pointStringBuild = new();
@@ -52,6 +211,7 @@ namespace Heave
                     using (command)
                     {
                         command.ExecuteNonQuery();
+                        return true;
                     }
                 }
             }
@@ -365,165 +525,7 @@ namespace Heave
             {
                 return 0;
             }
-            public List<GeoPoint> NodesToGeoPoints(List<Node> nodeList)
-            {
-                List<GeoPoint> geoPoints = new List<GeoPoint>();
-                foreach (Node node in nodeList)
-                {
-                    string wkt = node.GeoPoint;
-                    string ptName = node.Id;
-                    GeoPoint pt = new(ptName, wkt);
-                    geoPoints.Add(pt);
-                }
-                return geoPoints;
-            }
-            public List<Coordinate> NodesToCoordinates(List<Node> nodeList) 
-            {
-                List<Coordinate> geoPoints = new List<Coordinate>();
-                foreach (Node node in nodeList)
-                {
-                    string wkt = node.GeoPoint;
-                    string ptName = node.Id;
-                    WKTReader reader = new();
-                    Coordinate revPt = reader.Read(wkt).Coordinate;
-                    double x = revPt.X;
-                    double y = revPt.Y;
-                    Coordinate pt = new(x,y);
-                    //GeoPoint pt = new(ptName,wkt);
-                    geoPoints.Add(pt);
-                }
-                return geoPoints;
-            }
-            public string ConvertPointsToGeoJson(List<GeoPoint> points)
-            {
-                // Create a geometry factory with SRID 4326 for geographic coordinates
-                GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
-                FeatureCollection? featureCollection = new FeatureCollection();
-                WKTReader? wktReader = new WKTReader(geometryFactory);
 
-                foreach (var point in points)
-                {
-                    // Read the geography from the WKT
-                    Geometry? geometry = wktReader.Read(point.WKTPoint);
-
-                    // Ensure the geometry is set with the correct SRID
-                    if (geometry.SRID != 4326)
-                    {
-                        geometry.SRID = 4326;
-                    }
-
-                    // Create a feature with the geometry and an attributes table
-                    Feature? feature = new Feature(geometry, new AttributesTable());
-                    feature.Attributes.Add("PointName", point.PointName);
-                    featureCollection.Add(feature);
-                }
-
-                // Write the feature collection to a GeoJSON string
-                GeoJsonWriter? geoJsonWriter = new GeoJsonWriter();
-                return geoJsonWriter.Write(featureCollection);
-            }
-            public string ConvertCoordsToGeoJson(List<Coordinate> coordinates)
-            {
-                // Create a geometry factory with SRID 4326 for geographic coordinates
-                GeometryFactory geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
-                FeatureCollection featureCollection = new FeatureCollection();
-
-                foreach (var coordinate in coordinates)
-                {
-                    // Create a point geometry from the coordinate
-                    Point point = geometryFactory.CreatePoint(coordinate);
-
-                    // Ensure the geometry is set with the correct SRID
-                    if (point.SRID != 4326)
-                    {
-                        point.SRID = 4326;
-                    }
-
-                    // Create a feature with the geometry and an empty attributes table
-                    Feature feature = new Feature(point, new AttributesTable());
-                    featureCollection.Add(feature);
-                }
-
-                // Write the feature collection to a GeoJSON string
-                GeoJsonWriter geoJsonWriter = new GeoJsonWriter();
-                return geoJsonWriter.Write(featureCollection);
-            }
-            public string ConvertCoordsToGeoJson(List<GeoPoint> points)
-            {
-                // Create a geometry factory with SRID 4326 for geographic coordinates
-                GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
-                FeatureCollection? featureCollection = new FeatureCollection();
-                WKTReader? wktReader = new WKTReader(geometryFactory);
-
-                foreach (var point in points)
-                {
-                    // Read the geography from the WKT
-                    Geometry? geometry = wktReader.Read(point.WKTPoint);
-
-                    // Ensure the geometry is set with the correct SRID
-                    if (geometry.SRID != 4326)
-                    {
-                        geometry.SRID = 4326;
-                    }
-
-                    // Create a feature with the geometry and an attributes table
-                    Feature? feature = new Feature(geometry, new AttributesTable());
-                    feature.Attributes.Add("PointName", point.PointName);
-                    featureCollection.Add(feature);
-                }
-
-                // Write the feature collection to a GeoJSON string
-                GeoJsonWriter? geoJsonWriter = new GeoJsonWriter();
-                return geoJsonWriter.Write(featureCollection);
-            }
-
-            public List<Node> DBGetGraphData(int customerId)  // this uses a stored MSSQL PROCEDURE to retrieve all the nodes along with their edges
-            {
-                List<Node> nodes = new();     // List to hold all results
-                using (SqlConnection connection = GetConnection(SqlStr))
-                {
-                    using (SqlCommand command = new("GetGraphData", connection))// this GEO MSSQL procedure returns graph nodes and edges
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.Add(new SqlParameter("@customerId", customerId));
-                        connection.Open();
-                        using (SqlDataReader reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                int nodeId = reader.GetInt32(0);
-                                string markerName = reader.GetString(1);
-                                string geoData = reader.GetString(2);
-                                //System.Console.WriteLine($"Marker name {markerName}, Geo {geoData}");
-                                Node nod = new Node(markerName, geoData);//id is node name
-                                //System.Console.WriteLine("node " + nod.Id + " created");
-                                nodes.Add(nod);
-                            }
-                            if (reader.NextResult())
-                            {
-                                while (reader.Read())
-                                {
-                                    string strtNode = reader.GetString(0);
-                                    string endNode = reader.GetString(1);
-                                    double distance = reader.GetDouble(2);
-                                    //System.Console.WriteLine($"StartId {strtNode}, EndNode {endNode}, Distance {distance}");
-
-                                    Node startNode = nodes.FirstOrDefault(node => node.Id == strtNode);
-                                    Node endiNode = nodes.FirstOrDefault(node => node.Id == endNode);
-                                    //if (startNode != null && endNode != null)
-                                    //{
-                                    Edge edge = new Edge(startNode, endiNode, distance);
-                                    startNode.Edges.Add(edge);
-                                    //}
-                                    //else { System.Console.WriteLine("this id does not exist in nodes List"); }
-
-                                }
-                            }
-                        }
-                    }
-                }
-                return nodes;
-            }
             public override int DBCreateMember(Member memb)//REDUNDANT FIX RETURN
             { return 4; }
             public override int DBCreateOrder(int custId, int itemId, int quantity)

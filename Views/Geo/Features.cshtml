@@ -1,19 +1,21 @@
 @model string
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Map Features</title>
 </head>
+
 <body>
     <div id="map" style="width: 100%; height: 700px;"></div>
-   <script>
+    <script>
         var geoJsonData = @Html.Raw(Model); // Embed the model data directly in the page
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             var mymap = L.map('map').setView([49.4925, -117.2942], 13);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 18,
+            L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                maxZoom: 17,
+                attribution: 'Map data © <a href="https://opentopomap.org">OpenTopoMap</a> contributors'
             }).addTo(mymap);
 
             // Add the GeoJSON data directly to the map
@@ -22,17 +24,36 @@
                     if (feature.properties && feature.properties.PointName) {
                         layer.bindPopup(feature.properties.PointName);
                     } else {
-                console.log("no description found"); // Logs this message to the browser console
-            }
+                        console.log("no description found"); // Logs this message to the browser console
+                    }
                 }
             }).addTo(mymap);
+            // Handle map click events
+            mymap.on('click', function (e) {
+                var lat = e.latlng.lat.toFixed(6); // Get the latitude and fix to 6 decimal places
+                var lng = e.latlng.lng.toFixed(6); // Get the longitude and fix to 6 decimal places
+                var coordInput = document.getElementById('Coordinates');
+                coordInput.value = lng + " " + lat; // Update the hidden input field
+            });
         });
     </script>
     @if (ViewBag.Message != null)
-{
-    <p>@ViewBag.Message</p>
-}
+    {
+        <p>@ViewBag.Message</p>
+    }
+    <h2>Create Feature</h2>
+    <form asp-action="CreateFeature" asp-controller="Geo" method="post">
+        <label for="FeatureName">Feature Name</label>
+        <input type="text" id="FeatureName" name="FeatureName" />
+        <br />
+        <label for="Coordinates">Long Lat</label>
+        <input type="text" id="Coordinates" name="Coordinates" />
+        <br />
+        <label for="Buffer">Buffer</label>
+        <input type="number" id="Buffer" name="Buffer" />
+        <br />
+        <input type="submit" value="Go" />
+    </form>
 </body>
+
 </html>
-
-

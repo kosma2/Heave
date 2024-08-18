@@ -1,8 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Heave.Models;
-using NetTopologySuite.Geometries;
-using NetTopologySuite.LinearReferencing;
 using Microsoft.AspNetCore.SignalR;
 
 
@@ -23,55 +21,15 @@ public class GeoController : Controller
         _configuration = configuration;
         _hubContext = hubContext;
     }
-
-    static void Reporter_ProgressChanged(object sender, ProgressEventArgs e)
-    {
-        Console.WriteLine(e.Message); // Handle the progress update
-    }
-
-
-    public static List<Coordinate> GetPointsAlongLine(List<Coordinate> coList,Coordinate start, Coordinate end, double divisor)
-    {
-        //LineString? line = new LineString(new Coordinate[] { start, end });
-        LineString? line = new LineString(coList.ToArray());
-
-        double length = line.Length;
-        double interval = length / divisor;
-        List<Coordinate>? points = new List<Coordinate>();
-        for (double dist = 0; dist <= length; dist += interval)
-        {
-            Coordinate? extractPoint = new LengthIndexedLine(line).ExtractPoint(dist);
-            points.Add(extractPoint);
-        }
-        return points;
-    }
     
-    public void DronePing(List<Coordinate> flightPath)
+    public IActionResult CreateFeature()
     {
-        Coordinate? start = new Coordinate(49.496280006567815, -117.34430314398065);
-        Coordinate? end = new Coordinate(49.48819605167058, -117.28473664866941);
-        List<Coordinate>? points = GetPointsAlongLine(flightPath,start, end, 30); //start, end, number of intervals
-
-        ProgressReporter? reporter = new ProgressReporter(1000, points, _hubContext);
-        reporter.ProgressChanged += Reporter_ProgressChanged;
-        reporter.Start();
-    }
-    
-    public IActionResult Index()
-    {
-        return View(new MemberLoginModel());
+        return View();
     }
     public IActionResult Dijkstra()
     {
-        Program.GeoConnect geoConnect = InitGeoConnect();
-        List<Node> nodeList = geoConnect.DBGetGraphData(1012);
-
-        Dijkstra? dijkstra = new Dijkstra();
-        Node startingNode = nodeList.FirstOrDefault(node => node.Id == "n1");
-        List<Node> pathNodeList = dijkstra.ExecuteDij(startingNode, nodeList);
-        List<Coordinate> pathPoints = geoConnect.NodesToCoordinates(pathNodeList);
-        DronePing(pathPoints);//Start drone dummy along the path
-        string jsonString = geoConnect.ConvertCoordsToGeoJson(pathPoints);
+        MapHelper mapHelper = new(_configuration, _hubContext);
+        string jsonString = mapHelper.PathToMap(customerId: 1012.ToString());
         return View("Dijk", jsonString);
     }
 
@@ -87,13 +45,18 @@ public class GeoController : Controller
             formatedPoints.Add(pt);
         }
         string jsnString = geoConnect.ConvertPointsToGeoJson(formatedPoints);
-
         return View("Features", jsnString);
-
     }
 
     [HttpPost]
-
+    public IActionResult CreateFeature(string FeatureName, String Coordinates, int Buffer)
+    {
+        List<string> coordList= new(){Coordinates};
+        Program.GeoConnect geoConnect = InitGeoConnect();
+        geoConnect.DBCreateGeoObject("point",FeatureName,coordList, Buffer);
+        ViewBag.Message = "Feature Created";
+        return View("Confirmation");
+    }
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

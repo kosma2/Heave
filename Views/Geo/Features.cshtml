@@ -22,12 +22,35 @@
             L.geoJSON(geoJsonData, {
                 onEachFeature: function (feature, layer) {
                     if (feature.properties && feature.properties.PointName) {
-                        layer.bindPopup(feature.properties.PointName);
-                    } else {
-                        console.log("no description found"); // Logs this message to the browser console
+                        // Bind hover to show popup
+                        layer.on('mouseover', function (e) {
+                            e.target.bindPopup(feature.properties.PointName + feature.properties.Buffer).openPopup();
+                        });
+                        layer.on('mouseout', function (e) {
+                            e.target.closePopup();
+                        });
+                        // Bind click for deletion
+                        layer.on('click', function (e) {
+                            var featureId = feature.properties.PointId; // Ensure 'PointName' is the correct property key
+                            var message = "Delete this feature: " + featureId + "?";
+                            if (confirm(message)) {
+                                //var featureId = feature.properties.PointId;
+                                deleteFeature(featureId, e.target);
+                            }
+                        });
+                    }
+                    // Check if there is a Buffer attribute and draw a circle
+                    if (feature.properties.Buffer && feature.properties.Buffer > 0) {
+                        L.circle(layer.getLatLng(), {
+                            color: 'blue',
+                            fillColor: '#4287f5',
+                            fillOpacity: 0.5,
+                            radius: feature.properties.Buffer // Radius in meters; adjust as necessary for your data
+                        }).addTo(mymap);
                     }
                 }
             }).addTo(mymap);
+
             // Handle map click events
             mymap.on('click', function (e) {
                 var lat = e.latlng.lat.toFixed(6); // Get the latitude and fix to 6 decimal places
@@ -35,6 +58,22 @@
                 var coordInput = document.getElementById('Coordinates');
                 coordInput.value = lng + " " + lat; // Update the hidden input field
             });
+
+            // Delete feature by sending an AJAX request
+            function deleteFeature(featureId) {
+                console.log("Attempting to delete feature with ID:", featureId);
+
+                fetch(`/Geo/DeleteFeature?featureId=${featureId}`, { method: 'DELETE' })
+
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            geoJsonLayer.removeLayer(geoJsonLayer.getLayer(featureId));
+                            console.log('Feature deleted');
+                        }
+                    })
+                    .catch(error => console.error('Error deleting feature:', error));
+            }
         });
     </script>
     @if (ViewBag.Message != null)

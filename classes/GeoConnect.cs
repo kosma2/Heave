@@ -62,6 +62,7 @@ namespace Heave
 
                     // Create a feature with the geometry and an attributes table
                     Feature? feature = new Feature(geometry, new AttributesTable());
+                    feature.Attributes.Add("PointID", point.PointName);
                     feature.Attributes.Add("PointName", point.PointName);
                     featureCollection.Add(feature);
                 }
@@ -216,8 +217,8 @@ namespace Heave
                 }
             }
 
-            public void DBDeleteAirMarker(int markerId)
-            {
+            public bool DBDeleteAirMarker(int markerId)
+            {System.Console.WriteLine($"deleting marker {markerId}");
                 SqlConnection connection = GetConnection(SqlStr);
                 using (connection)
                 {
@@ -229,17 +230,17 @@ namespace Heave
                         command.Parameters.AddWithValue("@markerId", markerId);
                         connection.Open();
                         int rowsAffected = command.ExecuteNonQuery();
-                        System.Console.WriteLine(rowsAffected);
+                        return rowsAffected >0;
                     }
                 }
             }
 
-            public List<(int, string, string, string)> ShowAirMarkers()  //pointId, ShapeName, MarkerName, Geo
+            public List<(int, string, string, string,int)> GetAirMarkers()  //pointId, ShapeName, MarkerName, Geo
             {
-                List<(int, string, string, string)> markerInfo = new();     // List to hold all results
+                List<(int, string, string, string,int)> markerInfo = new();     // List to hold all results
                 using (SqlConnection connection = GetConnection(SqlStr))
                 {
-                    String sql = "SELECT ID, ShapeName, MarkerName, GeoLocation.STAsText() AS GeoLocText FROM airmarker";
+                    String sql = "SELECT ID, ShapeName, MarkerName, GeoLocation.STAsText() AS GeoLocText, Buffer FROM airmarker";
                     using (SqlCommand command = new(sql, connection))
                     {
                         connection.Open();
@@ -251,7 +252,8 @@ namespace Heave
                                 string shapeName = reader.GetString(reader.GetOrdinal("ShapeName"));
                                 string markerName = reader.GetString(reader.GetOrdinal("MarkerName"));
                                 string geo = reader.GetString(reader.GetOrdinal("GeoLocText"));
-                                markerInfo.Add((shapeId, shapeName, markerName, geo));
+                                int buffer = reader.GetInt32(reader.GetOrdinal("Buffer"));
+                                markerInfo.Add((shapeId, shapeName, markerName, geo,buffer));
                             }
                             return markerInfo;
                         }

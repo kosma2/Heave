@@ -41,12 +41,12 @@ public class GeoController : Controller
     public IActionResult Features()
     {
         Program.GeoConnect geoConnect = InitGeoConnect();
-        List<(int, string, string, string, int)> markerList = geoConnect.GetAirMarkers();
+        List<(int, string, string, string, string, int)> markerList = geoConnect.GetAirMarkers();
         GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
         FeatureCollection? featureCollection = new FeatureCollection();
         WKTReader? wktReader = new WKTReader(geometryFactory);
 
-        foreach ((int pointId, string shapeType, string pointName, string wkt, int buffer) point in markerList)
+        foreach ((int pointId, string featureType, string shapeType, string pointName, string wkt, int buffer) point in markerList)
         {
             // Read the geography from the WKT
             Geometry? geometry = wktReader.Read(point.wkt);
@@ -60,6 +60,8 @@ public class GeoController : Controller
             // Create a feature with the geometry and an attributes table
             Feature? feature = new Feature(geometry, new AttributesTable());
             feature.Attributes.Add("PointId", point.pointId);
+            feature.Attributes.Add("FeatureType", point.featureType);
+            System.Console.WriteLine(point.featureType);
             feature.Attributes.Add("PointName", point.pointName);
             feature.Attributes.Add("Buffer", point.buffer);
             featureCollection.Add(feature);
@@ -72,11 +74,11 @@ public class GeoController : Controller
     }
 
     [HttpPost]
-    public IActionResult CreateFeature(string FeatureName, String Coordinates, int Buffer)
+    public IActionResult CreateFeature(string FeatureType,string FeatureName, String Coordinates, int Buffer)
     {
         List<string> coordList = new() { Coordinates };
         Program.GeoConnect geoConnect = InitGeoConnect();
-        geoConnect.DBCreateGeoObject("point", FeatureName, coordList, Buffer);
+        geoConnect.DBCreateGeoObject(FeatureType,"point", FeatureName, coordList, Buffer);
         ViewBag.Message = "Feature Created";
         return View("Confirmation");
     }
@@ -90,7 +92,6 @@ public class GeoController : Controller
     {
         try
         {
-            System.Console.WriteLine($"request delet {featureId}");
             Program.GeoConnect geoConnect = InitGeoConnect();
             geoConnect.DBDeleteAirMarker(Convert.ToInt32(featureId));
             return Json(new { success = true });

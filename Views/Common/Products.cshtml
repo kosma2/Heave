@@ -1,6 +1,6 @@
 @model List<(int,String)>
 
-<h2>Products</h2>
+<h2>Products @ViewBag.CustomerId</h2>
 <table>
     <tr>
         <th>ID</th>
@@ -16,6 +16,7 @@
         <td>@itemName</td>
         <td>
             <form asp-action="CreateOrder" asp-controller="Common" method=post>
+            <input type="hidden" name="customerId" value="@ViewBag.CustomerId"/>
             <input type="hidden" name="itemId" value="@itemId" />
             <input type="text"class="form-control" name="quantity" required />
             <button type="submit" class="btn btn-primary">buy</button>

@@ -40,10 +40,10 @@
                         });
                     }
                     // Check if there is a Buffer attribute and draw a circle
-                    if (feature.properties.Buffer && feature.properties.Buffer > 0) {
+                    if (feature.properties.Buffer > 0 && feature.properties.FeatureType == "NoFlyNode") {
                         L.circle(layer.getLatLng(), {
-                            color: 'blue',
-                            fillColor: '#4287f5',
+                            color: 'red',
+                            fillColor: 'orange',
                             fillOpacity: 0.5,
                             radius: feature.properties.Buffer // Radius in meters; adjust as necessary for your data
                         }).addTo(mymap);
@@ -82,6 +82,11 @@
     }
     <h2>Create Feature</h2>
     <form asp-action="CreateFeature" asp-controller="Geo" method="post">
+        <label for="FeatureType">Feature type</label>
+        <select name="FeatureType">
+            <option value="NavNode">Navigation Marker</option>
+            <option value="NoFlyNode">No-Fly Area</option>
+        </select>
         <label for="FeatureName">Feature Name</label>
         <input type="text" id="FeatureName" name="FeatureName" />
         <br />

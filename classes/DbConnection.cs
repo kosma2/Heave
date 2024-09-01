@@ -1,3 +1,5 @@
+using Microsoft.Data.SqlClient;
+
 namespace Heave
 {
     partial class Program
@@ -13,7 +15,7 @@ namespace Heave
             public abstract void DBdeleteOrder(int orderId);
             public abstract (int,int) InterfaceCreateOrder();
             public abstract int DBCreateOrder(int custId, int itemId, int quantity);
-            public abstract int DBcreateOrderItem(int orderId, int itemId, int quantity);
+            public abstract int DBcreateOrderItem(int orderId, int itemId, int quantity, SqlConnection connection, SqlTransaction transaction);
             public abstract List<(int ItemId, String ItemName)> DBListItems();
             public abstract void DBAddItem(Item item);
             public abstract void DBDeleteItem(String id);

@@ -11,7 +11,7 @@ namespace Heave
         public class userConnect : DbConnection
         {
             public UserSession CurrentSession { get; private set; }
-             public override List<(int,string)> ShowCustomers()
+            public override List<(int, string)> ShowCustomers()
             {
                 return null;
             }
@@ -29,7 +29,7 @@ namespace Heave
                         {
                             if (reader.Read())
                             {
-                                int resultMemId= reader.GetInt32(0);
+                                int resultMemId = reader.GetInt32(0);
                                 return resultMemId;
                             }
                             else
@@ -83,66 +83,94 @@ namespace Heave
             public override (int, int) InterfaceCreateOrder()  // interface for creating order, returns a tuple (item#, quantity)
             {
                 userConnect usConnect = new userConnect();
-                
+
                 System.Console.WriteLine("please order #");
                 int itemNo = Convert.ToInt32(Console.ReadLine());
                 System.Console.WriteLine("how many you want?");
                 int quant = Convert.ToInt32(Console.ReadLine());
-                return (itemNo,quant);//(inputItemId, quant);
+                return (itemNo, quant);//(inputItemId, quant);
 
             }
             public override int DBCreateOrder(int custId, int itemId, int quantity) //returns orderId
             {
                 String custAddress = GetCustomerAddress(custId);
                 System.Console.WriteLine(custAddress);
-                Order order = new(custId, custAddress);
+                Order order = new Order(custId, custAddress);
                 SqlConnection connection = GetConnection(SqlStr);
+
                 using (connection)
                 {
-                    string query = "INSERT INTO orders (CustomerId, OrderDate, DeliveryAddress, DeliverStatus) VALUES (@custId, @orDate, @custAddy, @status);SELECT SCOPE_IDENTITY();";
-                    SqlCommand command = new(query, connection);
-                    command.Parameters.AddWithValue("@custId", order.CustomerId);
-                    command.Parameters.AddWithValue("orDate", order.OrderDate);
-                    command.Parameters.AddWithValue("@custAddy", order.DeliveryAddress);
-                    command.Parameters.AddWithValue("@status", order.DeliveryStatus);
-                    connection.Open();
-                    int resultOrderId;
-                    using (command)
+                    SqlTransaction transaction = null;
+                    try
                     {
-                        resultOrderId = Convert.ToInt32(command.ExecuteScalar());
+                        connection.Open();
+                        transaction = connection.BeginTransaction();
 
+                        // Insert into orders
+                        string orderQuery = "INSERT INTO orders (CustomerId, OrderDate, DeliveryAddress, DeliverStatus) VALUES (@custId, @orDate, @custAddy, @status); SELECT SCOPE_IDENTITY();";
+                        SqlCommand orderCommand = new SqlCommand(orderQuery, connection, transaction);
+                        orderCommand.Parameters.AddWithValue("@custId", order.CustomerId);
+                        orderCommand.Parameters.AddWithValue("@orDate", order.OrderDate);
+                        orderCommand.Parameters.AddWithValue("@custAddy", order.DeliveryAddress);
+                        orderCommand.Parameters.AddWithValue("@status", order.DeliveryStatus);
+
+                        int resultOrderId = Convert.ToInt32(orderCommand.ExecuteScalar());
+                        System.Console.WriteLine($"DBCreateOrder transaction says orderid is {resultOrderId}");
+
+                        if (resultOrderId != 0)
+                        {
+                            // Call DBcreateOrderItem within the same transaction context
+                            int orderItemId = DBcreateOrderItem(resultOrderId, itemId, quantity, connection, transaction);
+                            if (orderItemId != 0)
+                            {
+                                transaction.Commit();
+                                System.Console.WriteLine($"Transaction committed");
+                                return resultOrderId;
+                            }
+                            else
+                            {
+                                throw new Exception("Failed to create order item");
+                            }
+                        }
+                        else
+                        {
+                            throw new Exception("Order ID generation failed");
+                        }
                     }
-                    DBcreateOrderItem(resultOrderId, itemId, quantity);
-                    return resultOrderId;
-
+                    catch (Exception ex)
+                    {
+                        System.Console.WriteLine("Error: " + ex.Message);
+                        transaction?.Rollback();
+                        return 0;
+                    }
                 }
-
-
             }
-            public override int DBcreateOrderItem(int orderId, int itemId, int quantity) //returns orderItemId
+
+            public override int DBcreateOrderItem(int orderId, int itemId, int quantity, SqlConnection connection, SqlTransaction transaction) //returns orderItemId
             {
+                System.Console.WriteLine($"this is DBCreateOrderItem");
+
                 OrderItem orItem = new(orderId, itemId, quantity);
-                SqlConnection connection = GetConnection(SqlStr);
-                using (connection)
-                {
-                    string query = "INSERT INTO orderItems (OrderId, ItemId, Quantity, Price) VALUES (@orderId, @itemId, @quant, @price); SELECT SCOPE_IDENTITY();";
-                    SqlCommand command = new(query, connection);
-                    command.Parameters.AddWithValue("@itemId", orItem.ItemId);
-                    command.Parameters.AddWithValue("@orderId", orItem.OrderId);
-                    command.Parameters.AddWithValue("@quant", orItem.Quantity);
-                    decimal price = GetItemPrice(orItem.ItemId);
-                    decimal totalPrice = price * orItem.ItemId;
-                    command.Parameters.AddWithValue("@price", totalPrice);
-                    connection.Open();
-                    using (command)
-                    {
-                        int resultOrderItemId = Convert.ToInt32(command.ExecuteScalar());
-                        return resultOrderItemId;
-                    }
-                }
+                decimal price = GetItemPrice(orItem.ItemId);
+                decimal totalPrice = price * orItem.Quantity;
+                decimal roundTotalPrice = Math.Round(totalPrice);
+                System.Console.WriteLine($"totalPrice is {roundTotalPrice}");
+
+                string query = "INSERT INTO orderItems (OrderId, ItemId, Quantity, Price) VALUES (@orderId, @itemId, @quant, @price); SELECT SCOPE_IDENTITY();";
+                SqlCommand command = new SqlCommand(query, connection, transaction);
+                command.Parameters.AddWithValue("@orderId", orItem.OrderId);
+                command.Parameters.AddWithValue("@itemId", orItem.ItemId);
+                command.Parameters.AddWithValue("@quant", orItem.Quantity);
+                command.Parameters.AddWithValue("@price", roundTotalPrice);
+
+                int resultOrderItemId = Convert.ToInt32(command.ExecuteScalar());
+                System.Console.WriteLine($"DBCreateOrderItem returning OrderItemId {resultOrderItemId}");
+                return resultOrderItemId;
             }
+
             public override decimal GetItemPrice(int itemId)
             {
+                System.Console.WriteLine($"this is GetItemPrice with itemId {itemId}");
                 using (SqlConnection connection = GetConnection(SqlStr))
                 {
                     String sql = "SELECT ItemPrice FROM inventory WHERE ItemId = @itemId";
@@ -171,6 +199,7 @@ namespace Heave
             }
             public String GetCustomerAddress(int custId)
             {
+                System.Console.WriteLine($"GetCustomerAddress says custId is:{custId}");
                 SqlConnection connection = GetConnection(SqlStr);
                 using (connection)
                 {
@@ -195,7 +224,7 @@ namespace Heave
                     }
                 }
             }
-           
+
             public List<List<String>> DBListOrders(int custId)  //lists orders based on CustomerId. each List contains an orderId, address and status
             {
                 SqlConnection connection = GetConnection(SqlStr);
@@ -203,7 +232,7 @@ namespace Heave
                 {
                     SqlCommand command = new();
                     StringBuilder sqlStr = new StringBuilder("SELECT OrderId, DeliveryAddress,DeliverStatus FROM orders");
-                    if(custId != 0)  //admin value
+                    if (custId != 0)  //admin value
                     {
                         sqlStr.Append(" WHERE CustomerId = @customer");
                         command.Parameters.AddWithValue("@customer", custId);
@@ -265,7 +294,7 @@ namespace Heave
                             if (reader.HasRows)
                             {
                                 int rowCount = 0;
-                                List<(int,string)> idAndName = new();
+                                List<(int, string)> idAndName = new();
 
                                 /*var IdAndName = new List<object>  // list of lists
                                 {
@@ -279,7 +308,7 @@ namespace Heave
                                     //((List<string>)IdAndName[1]).Add((String)reader["ItemName"]);
                                     int itmId = Convert.ToInt32(reader["ItemId"]);
                                     string itmName = reader["ItemName"].ToString();
-                                    idAndName.Add((itmId,itmName));
+                                    idAndName.Add((itmId, itmName));
                                 }
                                 return idAndName;
                             }
@@ -400,7 +429,6 @@ namespace Heave
             public override void DBDeleteItem(string id)
             {
             }
-            
 
         }
     }

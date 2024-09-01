@@ -173,7 +173,7 @@ namespace Heave
                 }
                 return nodes;
             }
-            public bool DBCreateGeoObject(string GeomType, string MarkerName, List<string> PointList, int Buffer) // INSERTS a GeoSpatial geometry
+            public bool DBCreateGeoObject(string MarkerType, string GeomType, string MarkerName, List<string> PointList, int Buffer) // INSERTS a GeoSpatial geometry
             {
                 String SQLString = "";
                 StringBuilder pointStringBuild = new();
@@ -188,7 +188,7 @@ namespace Heave
                         SQLString = "INSERT INTO airmarker (ShapeName, MarkerName, GeoLocation,Buffer) VALUES (@GeomType, @MarkName, geography::STLineFromText('LINESTRING('+ @WKL +')', 4326), @Buffer);";
                         break;
                     case "point":
-                        SQLString = "INSERT INTO airmarker (ShapeName, MarkerName, GeoLocation, Buffer) VALUES (@GeomType, @MarkName, geography::STPointFromText('POINT('+ @WKL + ')', 4326), @Buffer);";
+                        SQLString = "INSERT INTO airmarker (MarkerType, ShapeName, MarkerName, GeoLocation, Buffer) VALUES (@MarkerType, @GeomType, @MarkName, geography::STPointFromText('POINT('+ @WKL + ')', 4326), @Buffer);";
                         break;
                 }
                 foreach (string pt in PointList)
@@ -203,6 +203,7 @@ namespace Heave
                 {
                     String query = SQLString;
                     SqlCommand command = new(query, connection);
+                    command.Parameters.Add("@MarkerType", SqlDbType.VarChar).Value = MarkerType;
                     command.Parameters.Add("@GeomType", SqlDbType.VarChar).Value = GeomType;
                     command.Parameters.Add("@MarkName", SqlDbType.VarChar).Value = MarkerName;
                     command.Parameters.AddWithValue("@WKL", SqlDbType.VarChar).Value = pointStringBuild.ToString();
@@ -235,12 +236,12 @@ namespace Heave
                 }
             }
 
-            public List<(int, string, string, string,int)> GetAirMarkers()  //pointId, ShapeName, MarkerName, Geo
+            public List<(int,string, string, string, string,int)> GetAirMarkers()  //pointId, ShapeName, MarkerName, Geo
             {
-                List<(int, string, string, string,int)> markerInfo = new();     // List to hold all results
+                List<(int, string, string, string, string,int)> markerInfo = new();     // List to hold all results
                 using (SqlConnection connection = GetConnection(SqlStr))
                 {
-                    String sql = "SELECT ID, ShapeName, MarkerName, GeoLocation.STAsText() AS GeoLocText, Buffer FROM airmarker";
+                    String sql = "SELECT ID,MarkerType, ShapeName, MarkerName, GeoLocation.STAsText() AS GeoLocText, Buffer FROM airmarker";
                     using (SqlCommand command = new(sql, connection))
                     {
                         connection.Open();
@@ -249,11 +250,12 @@ namespace Heave
                             while (reader.Read())
                             {
                                 int shapeId = reader.GetInt32(reader.GetOrdinal("ID"));
+                                string markerType =reader.GetString(reader.GetOrdinal("MarkerType"));
                                 string shapeName = reader.GetString(reader.GetOrdinal("ShapeName"));
                                 string markerName = reader.GetString(reader.GetOrdinal("MarkerName"));
                                 string geo = reader.GetString(reader.GetOrdinal("GeoLocText"));
                                 int buffer = reader.GetInt32(reader.GetOrdinal("Buffer"));
-                                markerInfo.Add((shapeId, shapeName, markerName, geo,buffer));
+                                markerInfo.Add((shapeId, markerType, shapeName, markerName, geo,buffer));
                             }
                             return markerInfo;
                         }
@@ -523,7 +525,7 @@ namespace Heave
 
             public override decimal GetItemPrice(int itemId)
             { return 0; }
-            public override int DBcreateOrderItem(int orderId, int itemId, int quantity)
+            public override int DBcreateOrderItem(int orderId, int itemId, int quantity, SqlConnection connection, SqlTransaction transaction)
             {
                 return 0;
             }

@@ -48,11 +48,15 @@ public class CommonController : Controller
         return View("CreateMember",form);
     }
 
-       
-    public IActionResult Products()
+    [HttpGet("Common/Products/{customerId}")]
+
+    public IActionResult Products(int customerId)
     {
+        ViewBag.CustomerId = customerId;
+        System.Console.WriteLine($"customer id {ViewBag.CustomerId} passed to Products controller");
         Program.userConnect userConnect = InitUserConnect();
         List<(int, String)> productList = userConnect.DBListItems();
+
         return View(productList);
     }
 
@@ -61,15 +65,17 @@ public class CommonController : Controller
         Program.userConnect userConnect = InitUserConnect();
         List<List<string>> orderList = userConnect.DBListOrders(uSession.MemberId);  //maybe change to adminConnect for all order list
         ViewBag.Message = uSession.MemberId;
+        //decimal price = userConnect.GetItemPrice(2);
+        //System.Console.WriteLine($"MyOrders Sez price is{price}");
         return View("Orders",orderList);
     }
 
     [HttpPost]
-    public IActionResult CreateOrder(int itemId,int quantity)
-    {
+    public IActionResult CreateOrder(int customerId, int itemId,int quantity)
+    {System.Console.WriteLine($"CreateOrder Controller says customerId is: {customerId}");
         Program.userConnect userConnect = InitUserConnect();
-        int orderId = userConnect.DBCreateOrder(uSession.CustomerId, itemId, quantity);
-        ViewBag.Message = orderId != null ? $"Created order number {orderId}" : "There was a problem";
+        int orderId = userConnect.DBCreateOrder(customerId, itemId, quantity);
+        ViewBag.Message = orderId != 0 ? $"Created order number {orderId}" : "There was a problem";
         return View("Confirmation");
     }
         public IActionResult DynamicForm(DynamicFormModel form)

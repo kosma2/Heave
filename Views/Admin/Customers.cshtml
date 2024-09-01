@@ -1,5 +1,4 @@
 @model List<(int,String)>
-
 <h2>Customers</h2>
 <table>
     <tr>
@@ -10,10 +9,10 @@
 @foreach ((int, string) customer in Model)
 {
     <tr>
-        <td>@customer.Item1</td>
+        <td>@customer.Item1</td> 
         <td>@customer.Item2</td>
         <td>
-            <!-- Actions like Edit/Delete -->
+            <a href="@Url.Action("Products", "Common", new { customerId = customer.Item1 })">Create an order</a>
         </td>
     </tr>
 }

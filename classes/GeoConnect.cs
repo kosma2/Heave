@@ -219,7 +219,8 @@ namespace Heave
             }
 
             public bool DBDeleteAirMarker(int markerId)
-            {System.Console.WriteLine($"deleting marker {markerId}");
+            {
+                System.Console.WriteLine($"deleting marker {markerId}");
                 SqlConnection connection = GetConnection(SqlStr);
                 using (connection)
                 {
@@ -231,14 +232,14 @@ namespace Heave
                         command.Parameters.AddWithValue("@markerId", markerId);
                         connection.Open();
                         int rowsAffected = command.ExecuteNonQuery();
-                        return rowsAffected >0;
+                        return rowsAffected > 0;
                     }
                 }
             }
 
-            public List<(int,string, string, string, string,int)> GetAirMarkers()  //pointId, ShapeName, MarkerName, Geo
+            public List<(int, string, string, string, string, int)> GetAirMarkers()  //pointId, MarkerType, ShapeName, MarkerName, Geo, buffer
             {
-                List<(int, string, string, string, string,int)> markerInfo = new();     // List to hold all results
+                List<(int, string, string, string, string, int)> markerInfo = new();     // List to hold all results
                 using (SqlConnection connection = GetConnection(SqlStr))
                 {
                     String sql = "SELECT ID,MarkerType, ShapeName, MarkerName, GeoLocation.STAsText() AS GeoLocText, Buffer FROM airmarker";
@@ -250,17 +251,74 @@ namespace Heave
                             while (reader.Read())
                             {
                                 int shapeId = reader.GetInt32(reader.GetOrdinal("ID"));
-                                string markerType =reader.GetString(reader.GetOrdinal("MarkerType"));
+                                string markerType = reader.GetString(reader.GetOrdinal("MarkerType"));
                                 string shapeName = reader.GetString(reader.GetOrdinal("ShapeName"));
                                 string markerName = reader.GetString(reader.GetOrdinal("MarkerName"));
                                 string geo = reader.GetString(reader.GetOrdinal("GeoLocText"));
                                 int buffer = reader.GetInt32(reader.GetOrdinal("Buffer"));
-                                markerInfo.Add((shapeId, markerType, shapeName, markerName, geo,buffer));
+                                markerInfo.Add((shapeId, markerType, shapeName, markerName, geo, buffer));
                             }
                             return markerInfo;
                         }
                     }
                 }
+            }
+            public List<(int, string, string, string, string, int)> GetPathNodesInfo(List<Node> pathNodes, int customerId)  //pointId, MarkerType, ShapeName, MarkerName, Geo, buffer
+            {
+                List<(int, string, string, string, string, int)> markerInfo = new();     // List to hold all results
+                using (SqlConnection connection = GetConnection(SqlStr))
+                {
+                    SqlTransaction transaction = null;
+                    connection.Open();
+                    transaction = connection.BeginTransaction();
+                    foreach (Node node in pathNodes)
+                    {
+                        String sql = "SELECT ID,MarkerType, ShapeName, MarkerName, GeoLocation.STAsText() AS GeoLocText, Buffer FROM airmarker WHERE MarkerName = @nodeId";
+                        using (SqlCommand command = new(sql, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@nodeId", node.Id);
+                            using (SqlDataReader reader = command.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    int shapeId = reader.GetInt32(reader.GetOrdinal("ID"));
+                                    string markerType = reader.GetString(reader.GetOrdinal("MarkerType"));
+                                    string shapeName = reader.GetString(reader.GetOrdinal("ShapeName"));
+                                    string markerName = reader.GetString(reader.GetOrdinal("MarkerName"));
+                                    string geo = reader.GetString(reader.GetOrdinal("GeoLocText"));
+                                    int buffer = reader.GetInt32(reader.GetOrdinal("Buffer"));
+                                    markerInfo.Add((shapeId, markerType, shapeName, markerName, geo, buffer));
+                                }
+                            }
+                        }
+                    }
+                    // the customer node needs to be modified before getting Featured and jsoned
+                    String custAddress = GetCustomerAddress(customerId, connection, transaction);
+                    var result = markerInfo.FirstOrDefault(mi => mi.Item1 == customerId);
+                    int custShapeId = -1;
+                    string custMarkerType = "Customer";
+                    string custShapeName = "point"; //possibly Point
+                    string custMarkerName = custAddress;
+                    string custGeo = result.Item5;
+                    System.Console.WriteLine($"Customer geo is {custGeo}");
+                    int custBuffer = 0;
+                    //int index = markerInfo.FindIndex(mi => mi.Item4 == customerId.ToString());  // Find the index of the item
+                    //if (index != -1)  // Check if the item was found
+                    //{
+                        //var originalTuple = markerInfo[index];
+                        // Create a new  customer tuple with the modified value (e.g., changing the marker type)
+                        //(int, string, string, string, string, int) modifiedTuple = (originalTuple.Item1, "NewMarkerType", originalTuple.Item3, originalTuple.Item4, originalTuple.Item5, originalTuple.Item6);
+                        (int, string, string, string, string, int) customerFeatures = (custShapeId, custMarkerType, custShapeName, custMarkerName, custGeo, custBuffer);
+                        /* Replace the original customer tuple in the list
+                        //markerInfo[index] = modifiedTuple;
+                    //}
+                    else
+                    {
+                        Console.WriteLine("Marker not found.");
+                    }*/
+                    markerInfo.Add(customerFeatures);
+                }
+                return markerInfo;
             }
             public double GetNodeDistance(string marker1, string marker2)
             {
@@ -418,6 +476,58 @@ namespace Heave
                             }
                         }
                     }
+                }
+            }
+            public String GetCustomerAddress(int custId, SqlConnection connection = null, SqlTransaction transaction = null)
+            {
+                System.Console.WriteLine($"GetCustomerAddress says custId is:{custId}");
+                bool isConnectionInternallyManaged = false;
+                if (connection == null)
+                {
+                    connection = GetConnection(SqlStr);
+                    connection.Open();
+                    transaction = connection.BeginTransaction();
+                    isConnectionInternallyManaged = true;
+                }
+                try
+                {
+                    using (connection)
+                    {
+                        String sqlCommand = "SELECT HomeAddress FROM customer WHERE CustomerId = @custId";
+                        using (SqlCommand command = new(sqlCommand, connection, transaction))
+                        {
+                            command.Parameters.AddWithValue("@custId", custId);
+                            using (SqlDataReader reader = command.ExecuteReader())
+                            {
+                                if (reader.Read())
+                                {
+                                    String resultAddress = reader.GetString(0);
+                                    if (isConnectionInternallyManaged)
+                                    {
+                                        // Commit transaction and close connection if managed internally
+                                        transaction.Commit();
+                                        connection.Close();
+                                    }
+                                    return resultAddress;
+                                }
+                                else
+                                {
+                                    System.Console.WriteLine("nothing to read here");
+                                    return null;
+                                }
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    if (isConnectionInternallyManaged && transaction != null)
+                    {
+                        // Attempt to roll back the transaction if there was an error and it's managed internally
+                        transaction.Rollback();
+                        connection.Close();
+                    }
+                    throw; // Re-throw the exception
                 }
             }
             public override void DBdeleteOrder(int orderId)

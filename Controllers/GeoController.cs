@@ -33,9 +33,36 @@ public class GeoController : Controller
     }
     public IActionResult Dijkstra()
     {
+        Program.GeoConnect geoConnect = InitGeoConnect();
         MapHelper mapHelper = new(_configuration, _hubContext);
-        string jsonString = mapHelper.PathToMap(customerId: 1012.ToString());
-        return View("Dijk", jsonString);
+        int custId = 1013; //temp id
+        List<Node> pathNodeList = mapHelper.PathToMap(customerId: custId.ToString());
+        List<(int, string, string, string, string, int)> markerList = geoConnect.GetPathNodesInfo(pathNodeList,custId);
+        foreach((int, string, string, string, string, int) marker in markerList){System.Console.WriteLine($"feature ready List marker {marker.Item1}");}
+        GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+        FeatureCollection? featureCollection = new FeatureCollection();
+        WKTReader? wktReader = new WKTReader(geometryFactory);
+
+        foreach ((int pointId, string featureType, string shapeType, string pointName, string wkt, int buffer) point in markerList)
+        {
+            // Read the geography from the WKT
+            Geometry? geometry = wktReader.Read(point.wkt);
+
+            // Create a feature with the geometry and an attributes table
+            Feature? feature = new Feature(geometry, new AttributesTable());
+            feature.Attributes.Add("PointId", point.pointId);
+            feature.Attributes.Add("FeatureType", point.featureType);
+            System.Console.WriteLine($"Feature list {point.pointName}");
+            feature.Attributes.Add("PointName", point.pointName);
+            feature.Attributes.Add("Buffer", point.buffer);
+            featureCollection.Add(feature);
+
+            // Write the feature collection to a GeoJSON string
+        }
+        GeoJsonWriter? geoJsonWriter = new GeoJsonWriter();
+        var geoJsonString = geoJsonWriter.Write(featureCollection);
+        //return View("Features", geoJsonString);
+        return View("Dijk", geoJsonString);
     }
 
     public IActionResult Features()

@@ -47,19 +47,25 @@ namespace Heave
         }
 
 
-        public String PathToMap(string customerId)     //creates a dijkstra path and outputs it in json for Leaflet mapping
+        public List<Node> PathToMap(string customerId)     //creates a dijkstra path and outputs it in json for Leaflet mapping
         {
             string connectionString = _configuration.GetConnectionString("DefaultConnection");
             Program.GeoConnect geoConnect = new();
             geoConnect.SqlStr = connectionString;
             List<Node> nodeList = geoConnect.DBGetGraphData(Convert.ToInt32(customerId));
+            foreach(Node node in nodeList)
+            {
+                System.Console.WriteLine($"PathToMap node geo for {node.Id} is {node.GeoPoint}");
+            }
             Dijkstra? dijkstra = new Dijkstra();
             Node startingNode = nodeList.FirstOrDefault(node => node.Id == "n1");
             List<Node> pathNodeList = dijkstra.ExecuteDij(startingNode, nodeList, customerId);//obtain flight path points
-            List<Coordinate> pathPoints = geoConnect.NodesToCoordinates(pathNodeList);
+            foreach(Node node in pathNodeList){System.Console.WriteLine($"Raw Dijk List {node.Id}");}
+            return pathNodeList;
+            /*List<Coordinate> pathPoints = geoConnect.NodesToCoordinates(pathNodeList);
             DronePing(pathPoints);//Start drone dummy along the path
             string jsonString = geoConnect.ConvertCoordsToGeoJson(pathPoints);
-            return jsonString;
+            return jsonString;*/
         }
     }
 }

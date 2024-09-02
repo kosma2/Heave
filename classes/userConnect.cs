@@ -197,31 +197,57 @@ namespace Heave
                     }
                 }
             }
-            public String GetCustomerAddress(int custId)
+            public String GetCustomerAddress(int custId, SqlConnection connection = null, SqlTransaction transaction = null)
             {
                 System.Console.WriteLine($"GetCustomerAddress says custId is:{custId}");
-                SqlConnection connection = GetConnection(SqlStr);
-                using (connection)
+                bool isConnectionInternallyManaged = false;
+                if (connection == null)
                 {
-                    String sqlCommand = "SELECT HomeAddress FROM customer WHERE CustomerId = @custId";
-                    using (SqlCommand command = new(sqlCommand, connection))
+                    connection = GetConnection(SqlStr);
+                    connection.Open();
+                    transaction = connection.BeginTransaction();
+                    isConnectionInternallyManaged = true;
+                }
+                try
+                {
+                    using (connection)
                     {
-                        command.Parameters.AddWithValue("@custId", custId);
-                        connection.Open();
-                        using (SqlDataReader reader = command.ExecuteReader())
+                        String sqlCommand = "SELECT HomeAddress FROM customer WHERE CustomerId = @custId";
+                        using (SqlCommand command = new(sqlCommand, connection, transaction))
                         {
-                            if (reader.Read())
+                            command.Parameters.AddWithValue("@custId", custId);
+                            connection.Open();
+                            using (SqlDataReader reader = command.ExecuteReader())
                             {
-                                String resultAddress = reader.GetString(0);
-                                return resultAddress;
-                            }
-                            else
-                            {
-                                System.Console.WriteLine("nothing to read here");
-                                return null;
+                                if (reader.Read())
+                                {
+                                    String resultAddress = reader.GetString(0);
+                                    if (isConnectionInternallyManaged)
+                                    {
+                                        // Commit transaction and close connection if managed internally
+                                        transaction.Commit();
+                                        connection.Close();
+                                    }
+                                    return resultAddress;
+                                }
+                                else
+                                {
+                                    System.Console.WriteLine("nothing to read here");
+                                    return null;
+                                }
                             }
                         }
                     }
+                }
+                catch
+                {
+                    if (isConnectionInternallyManaged && transaction != null)
+                    {
+                        // Attempt to roll back the transaction if there was an error and it's managed internally
+                        transaction.Rollback();
+                        connection.Close();
+                    }
+                    throw; // Re-throw the exception
                 }
             }
 

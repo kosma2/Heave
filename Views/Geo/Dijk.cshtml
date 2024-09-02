@@ -14,12 +14,33 @@
         console.log(geoJsonData);
         document.addEventListener('DOMContentLoaded', function () {
             var mymap = L.map('map').setView([49.4925, -117.2942], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 18,
+            L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                maxZoom: 17,
+                attribution: 'Map data © <a href="https://opentopomap.org">OpenTopoMap</a> contributors'
             }).addTo(mymap);
 
-            L.geoJSON(geoJsonData).addTo(mymap);
+            L.geoJSON(geoJsonData, {
+                onEachFeature: function (feature, layer) {
+                    if (feature.properties && feature.properties.PointName) {
+                        // Bind hover to show popup
+                        layer.on('mouseover', function (e) {
+                            e.target.bindPopup(feature.properties.PointName + feature.properties.Buffer).openPopup();
+                        });
+                        layer.on('mouseout', function (e) {
+                            e.target.closePopup();
+                        });
+                    }
+                    // Check if there is a Buffer attribute and draw a circle
+                    if (feature.properties.Buffer > 0 && feature.properties.FeatureType == "NoFlyNode") {
+                        L.circle(layer.getLatLng(), {
+                            color: 'red',
+                            fillColor: 'orange',
+                            fillOpacity: 0.5,
+                            radius: feature.properties.Buffer // Radius in meters; adjust as necessary for your data
+                        }).addTo(mymap);
+                    }
+                }
+            }).addTo(mymap);
 
             //marker animation
 

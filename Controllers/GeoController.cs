@@ -35,9 +35,9 @@ public class GeoController : Controller
     {
         Program.GeoConnect geoConnect = InitGeoConnect();
         MapHelper mapHelper = new(_configuration, _hubContext);
-        int custId = 1013; //temp id
+        int custId = 1014; //temp id
         List<Node> pathNodeList = mapHelper.PathToMap(customerId: custId.ToString());
-        List<(int, string, string, string, string, int)> markerList = geoConnect.GetPathNodesInfo(pathNodeList,custId);
+        List<(int, string, string, string, string, int)> markerList = geoConnect.GetPathNodesInfo(pathNodeList,custId);  //get the nodes' info to create features
         foreach((int, string, string, string, string, int) marker in markerList){System.Console.WriteLine($"feature ready List marker {marker.Item1}");}
         GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
         FeatureCollection? featureCollection = new FeatureCollection();
@@ -57,7 +57,6 @@ public class GeoController : Controller
             feature.Attributes.Add("Buffer", point.buffer);
             featureCollection.Add(feature);
 
-            // Write the feature collection to a GeoJSON string
         }
         GeoJsonWriter? geoJsonWriter = new GeoJsonWriter();
         var geoJsonString = geoJsonWriter.Write(featureCollection);

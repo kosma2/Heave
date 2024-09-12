@@ -56,7 +56,7 @@ namespace Heave
             foreach(Node node in nodeList)
             {
                 System.Console.WriteLine($"PathToMap node geo for {node.Id} is {node.GeoPoint}");
-            }
+            }/*
             Dijkstra? dijkstra = new Dijkstra();
             Node startingNode = nodeList.FirstOrDefault(node => node.Id == "n1");
             List<Node> pathNodeList = dijkstra.ExecuteDij(startingNode, nodeList, customerId);//obtain flight path points
@@ -66,6 +66,7 @@ namespace Heave
             DronePing(pathPoints);//Start drone dummy along the path
             string jsonString = geoConnect.ConvertCoordsToGeoJson(pathPoints);
             return jsonString;*/
+            return nodeList;
         }
     }
 }

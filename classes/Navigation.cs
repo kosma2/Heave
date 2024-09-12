@@ -40,7 +40,7 @@ namespace Heave
 
             foreach (Node node in nodes)
             {
-                //System.Console.WriteLine("node " + node.Id + " dictionaries set and added to queue");
+                System.Console.WriteLine("node " + node.Id + " dictionaries set and added to queue");
                 Distances[node] = int.MaxValue;
                 Previous[node] = null;
                 priorityQueue.Add(node);
@@ -54,20 +54,20 @@ namespace Heave
             while (priorityQueue.Count() > 0)
             {
                 Node current = priorityQueue.Min;       //get the node with the shortest distance
-                //System.Console.WriteLine(" current node is " + current.Id);
+                System.Console.WriteLine(" current node is " + current.Id);
                 priorityQueue.Remove(current);
 
                 foreach (Edge edge in current.Edges)
                 {
                     Node neighbour = edge.To;
                     double alt = Distances[current] + edge.Distance;
-                    /*Console.WriteLine("current edge is " + edge.Distance);
+                    Console.WriteLine("current edge is " + edge.Distance);
                     System.Console.WriteLine("Distances from " + edge.From.Id + " to " + edge.To.Id + " is " + Distances[neighbour]);
-                    System.Console.WriteLine("alternative distance is " + alt);*/
+                    System.Console.WriteLine("alternative distance is " + alt);
                     if (alt < Distances[neighbour])
                     {
-                        //System.Console.WriteLine("alt is smaller.. updating.");
-                        //System.Console.WriteLine($"Distances for {neighbour.Id} updated to {alt}");
+                        System.Console.WriteLine("alt is smaller.. updating.");
+                        System.Console.WriteLine($"Distances for {neighbour.Id} updated to {alt}");
                         priorityQueue.Remove(neighbour);
                         Distances[neighbour] = alt;
                         Previous[neighbour] = current;
@@ -75,7 +75,7 @@ namespace Heave
                     }
                 }
             }
-            /*foreach (var node in Previous)
+            foreach (var node in Previous)
             {
                 if (node.Value == null)
                 {
@@ -85,7 +85,7 @@ namespace Heave
                 {
                     System.Console.WriteLine($"Start {node.Key.Id}, End {node.Value.Id}");
                 }
-            }*/
+            }
             List<Node> path = new();
             Node currentNode = Previous.Keys.FirstOrDefault(node => node.Id == custId);
             if (Previous.ContainsKey(currentNode) && Previous[currentNode] != null)
@@ -93,22 +93,27 @@ namespace Heave
                 while (currentNode != null && currentNode != source)
                 {
                     path.Add(currentNode);
-                    //System.Console.WriteLine(currentNode.Id + " added");
+                    System.Console.WriteLine(currentNode.Id + " added");
                     currentNode = Previous[currentNode];  // Move to the next node in the path
                 }
                 path.Add(source);  // Add the source at the end to complete the path
                 path.Reverse();    // Reverse to get the path from source to destination
 
-                /*foreach (Node node in path)
+                foreach (Node node in path)
                 {
                     System.Console.WriteLine(node.Id);
                     
-                }*/
+                }
                 return path;
             }
             else
             {
                 System.Console.WriteLine("No valid path from source to destination");
+                foreach (Node node in path)
+                {
+                    System.Console.WriteLine($"Dijkstra nodeList {node.Id}");
+                    
+                }
                 return null;
             }
           

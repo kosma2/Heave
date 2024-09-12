@@ -30,6 +30,8 @@ BEGIN
         VALUES (@CustomerId, @CustomerMarker, @CustomerGeo, 'point');
     END
 
+        --SELECT 'TempNodes Contents' AS Table_Name, * FROM @TempNodes;       --//debuggin
+
     CREATE TABLE #Edges (
         StartNodeMarkerName NVARCHAR(50),
         EndNodeMarkerName NVARCHAR(50),
@@ -60,6 +62,8 @@ BEGIN
                 ')', 4326
             ).STIntersects(C.GeoLocation.STBuffer(C.Buffer))=1
         );
+           -- SELECT 'Edges Contents' AS Table_Name, * FROM #Edges;       --debugging
+
     SELECT
         ID,
         MarkerName,

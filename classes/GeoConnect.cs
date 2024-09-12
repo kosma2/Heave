@@ -173,6 +173,41 @@ namespace Heave
                 }
                 return nodes;
             }
+            public List<Node> DBGetGraphDataDEBUG(int customerId)  // this uses a stored MSSQL PROCEDURE to retrieve all the nodes along with their edges
+            {
+                List<Node> nodes = new();     // List to hold all results
+                using (SqlConnection connection = GetConnection(SqlStr))
+                {
+                    using (SqlCommand command = new("GetGraphData", connection))// this GEO MSSQL procedure returns graph nodes and edges
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.Add(new SqlParameter("@customerId", customerId));
+                        connection.Open();
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            int resultCount = 0;
+                            do
+                            {
+                                Console.WriteLine($"Result Set: {++resultCount}");
+                                while (reader.Read())
+                                {
+                                    for (int i = 0; i < reader.FieldCount; i++)
+                                    {
+                                        Console.WriteLine($"{reader.GetName(i)}: {reader[i]}");
+                                    }
+                                    Console.WriteLine();
+                                }
+                                Console.WriteLine("---------------------------");
+                            }
+                            while (reader.NextResult());
+
+                            reader.Close();
+                        }
+                    }
+                }
+                return nodes;
+            }
+
             public bool DBCreateGeoObject(string MarkerType, string GeomType, string MarkerName, List<string> PointList, int Buffer) // INSERTS a GeoSpatial geometry
             {
                 String SQLString = "";
@@ -265,6 +300,11 @@ namespace Heave
             }
             public List<(int, string, string, string, string, int)> GetPathNodesInfo(List<Node> pathNodes, int customerId)  //pointId, MarkerType, ShapeName, MarkerName, Geo, buffer
             {
+                // the customer node info has to be processed separately
+                // retrieve the customer node from nodeList
+                int index = pathNodes.FindIndex(mi => mi.Id == customerId.ToString());  // Find the index of the customer node
+                String custGeo = pathNodes[index].GeoPoint;     // store the GeoPoint from the retrieved customer node
+                pathNodes.RemoveAt(index);      // remove customer node from the general list for the next querry. It is not an AirMarker.
                 List<(int, string, string, string, string, int)> markerInfo = new();     // List to hold all results
                 using (SqlConnection connection = GetConnection(SqlStr))
                 {
@@ -281,41 +321,44 @@ namespace Heave
                             {
                                 while (reader.Read())
                                 {
+                                    //int shapeId = Convert.ToInt32(node.Id);
                                     int shapeId = reader.GetInt32(reader.GetOrdinal("ID"));
                                     string markerType = reader.GetString(reader.GetOrdinal("MarkerType"));
                                     string shapeName = reader.GetString(reader.GetOrdinal("ShapeName"));
                                     string markerName = reader.GetString(reader.GetOrdinal("MarkerName"));
-                                    string geo = reader.GetString(reader.GetOrdinal("GeoLocText"));
+                                    //string geo = reader.GetString(reader.GetOrdinal("GeoLocText"));
+                                    string geo = node.GeoPoint;
                                     int buffer = reader.GetInt32(reader.GetOrdinal("Buffer"));
                                     markerInfo.Add((shapeId, markerType, shapeName, markerName, geo, buffer));
+                                    System.Console.WriteLine($"GetPathNodesInfo says {shapeId} {markerName} {geo}");
                                 }
                             }
                         }
                     }
-                    // the customer node needs to be modified before getting Featured and jsoned
+                    // Fill in the missing info for the customer feature
                     String custAddress = GetCustomerAddress(customerId, connection, transaction);
-                    var result = markerInfo.FirstOrDefault(mi => mi.Item1 == customerId);
+                    //var result = markerInfo.FirstOrDefault(mi => mi.Item1 == customerId);
+
                     int custShapeId = -1;
                     string custMarkerType = "Customer";
                     string custShapeName = "point"; //possibly Point
                     string custMarkerName = custAddress;
-                    string custGeo = result.Item5;
                     System.Console.WriteLine($"Customer geo is {custGeo}");
                     int custBuffer = 0;
                     //int index = markerInfo.FindIndex(mi => mi.Item4 == customerId.ToString());  // Find the index of the item
                     //if (index != -1)  // Check if the item was found
                     //{
-                        //var originalTuple = markerInfo[index];
-                        // Create a new  customer tuple with the modified value (e.g., changing the marker type)
-                        //(int, string, string, string, string, int) modifiedTuple = (originalTuple.Item1, "NewMarkerType", originalTuple.Item3, originalTuple.Item4, originalTuple.Item5, originalTuple.Item6);
-                        (int, string, string, string, string, int) customerFeatures = (custShapeId, custMarkerType, custShapeName, custMarkerName, custGeo, custBuffer);
-                        /* Replace the original customer tuple in the list
-                        //markerInfo[index] = modifiedTuple;
-                    //}
-                    else
-                    {
-                        Console.WriteLine("Marker not found.");
-                    }*/
+                    //var originalTuple = markerInfo[index];
+                    // Create a new  customer tuple with the modified value (e.g., changing the marker type)
+                    //(int, string, string, string, string, int) modifiedTuple = (originalTuple.Item1, "NewMarkerType", originalTuple.Item3, originalTuple.Item4, originalTuple.Item5, originalTuple.Item6);
+                    (int, string, string, string, string, int) customerFeatures = (custShapeId, custMarkerType, custShapeName, custMarkerName, custGeo, custBuffer);
+                    /* Replace the original customer tuple in the list
+                    //markerInfo[index] = modifiedTuple;
+                //}
+                else
+                {
+                    Console.WriteLine("Marker not found.");
+                }*/
                     markerInfo.Add(customerFeatures);
                 }
                 return markerInfo;

@@ -1,0 +1,11 @@
+﻿
+@{
+    ViewData["Title"] = "Problem";
+}
+
+<div class="text-center">
+    <h1 class="display-4">There was a problem</h1>
+</div>
+@if(ViewBag.Message != null){   
+    <p>@ViewBag.Message</p>
+}

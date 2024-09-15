@@ -31,7 +31,7 @@ namespace Heave
         public Dictionary<Node, double> Distances { get; private set; }      //stores the node's distance from source node
         public Dictionary<Node, Node> Previous { get; private set; }      //stores the node's last node
 
-        public List<Node> ExecuteDij(Node source, List<Node> nodes,string custId)
+        /*public List<Node> ExecuteDij(Node source, List<Node> nodes,string custId)
         {
             Distances = new();
             Previous = new Dictionary<Node, Node>();
@@ -117,6 +117,73 @@ namespace Heave
                 return null;
             }
           
+        }*/
+
+        public List<Node> ExecuteDij(Node source, List<Node> nodes, string custId)
+        {
+            Distances = new Dictionary<Node, double>();
+            Previous = new Dictionary<Node, Node>();
+            PriorityQueue<Node, double>? priorityQueue = new PriorityQueue<Node, double>();
+
+            foreach (Node node in nodes)
+            {
+                Distances[node] = double.MaxValue;
+                Previous[node] = null;
+            }
+            Distances[source] = 0;
+            priorityQueue.Enqueue(source, 0);
+
+            while (priorityQueue.Count > 0)
+            {
+                Node current = priorityQueue.Dequeue();
+
+                foreach (Edge edge in current.Edges)
+                {
+                    Node neighbour = edge.To;
+
+                    // Ensure neighbour is in the nodes list
+                    if (!Distances.ContainsKey(neighbour))
+                    {
+                        Distances[neighbour] = double.MaxValue;
+                        Previous[neighbour] = null;
+                    }
+
+                    double alt = Distances[current] + edge.Distance;
+
+                    if (alt < Distances[neighbour])
+                    {
+                        Distances[neighbour] = alt;
+                        Previous[neighbour] = current;
+                        priorityQueue.Enqueue(neighbour, alt);
+                    }
+                }
+            }
+
+            // Reconstruct the path
+            List<Node> path = new();
+            Node currentNode = nodes.FirstOrDefault(node => node.Id == custId);
+            if (currentNode == null || !Previous.ContainsKey(currentNode))
+            {
+                Console.WriteLine("No valid path from source to destination");
+                return null;
+            }
+
+            while (currentNode != null && currentNode != source)
+            {
+                path.Add(currentNode);
+                currentNode = Previous[currentNode];
+            }
+            if (currentNode == source)
+                path.Add(source);
+
+            path.Reverse();
+
+            foreach (Node node in path)
+            {
+                Console.WriteLine(node.Id);
+            }
+
+            return path;
         }
     }
 }

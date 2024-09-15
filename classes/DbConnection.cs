@@ -12,7 +12,7 @@ namespace Heave
             public abstract string GetItemName(int itemId);
             public abstract int DBGetCustomerId(int memId); // retrieves MemberId from customer table
 
-            public abstract void DBdeleteOrder(int orderId);
+            public abstract int DBdeleteOrder(int orderId);
             public abstract (int,int) InterfaceCreateOrder();
             public abstract int DBCreateOrder(int custId, int itemId, int quantity);
             public abstract int DBcreateOrderItem(int orderId, int itemId, int quantity, SqlConnection connection, SqlTransaction transaction);

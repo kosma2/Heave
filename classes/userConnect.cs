@@ -41,30 +41,49 @@ namespace Heave
                     }
                 }
             }
-            public override void DBdeleteOrder(int orderId)  // deletes the order and associated orderItems
+            public override int DBdeleteOrder(int orderId)  // deletes the order and associated orderItems
             {
                 using (SqlConnection connection = GetConnection(SqlStr))
                 {
-                    SqlTransaction transaction = connection.BeginTransaction();
+                    SqlTransaction transaction = null;
                     try
                     {
                         connection.Open();
-                        SqlCommand command = connection.CreateCommand();
-                        command.Transaction = transaction;
-                        command.CommandText = "DELETE FROM orders WHERE OrderId = @orderId";
-                        command.ExecuteNonQuery();
-                        command.CommandText = "DELETE FROM orderItems WHERE OrderId = @orderId";
-                        command.ExecuteNonQuery();
+                        transaction = connection.BeginTransaction();
+
+                        // First, delete from the 'orderItems' table
+                        using (SqlCommand command = connection.CreateCommand())
+                        {
+                            command.Transaction = transaction;
+                            command.CommandText = "DELETE FROM orderItems WHERE OrderId = @orderId";
+                            command.Parameters.AddWithValue("@orderId", orderId);
+                            command.ExecuteNonQuery();
+                        }
+
+                        // Then delete from the 'orders' table
+                        using (SqlCommand command = connection.CreateCommand())
+                        {
+                            command.Transaction = transaction;
+                            command.CommandText = "DELETE FROM orders WHERE OrderId = @orderId";
+                            command.Parameters.AddWithValue("@orderId", orderId);
+                            command.ExecuteNonQuery();
+                        }
+
+                        // Commit the transaction
                         transaction.Commit();
 
+                        // Return the deleted OrderId
+                        return orderId;
                     }
                     catch (Exception)
                     {
-                        transaction.Rollback();
-                        throw;
+                        if (transaction != null)
+                        {
+                            transaction.Rollback();
+                        }
+                        throw; // Re-throw the exception for handling
                     }
                 }
-
             }
             public void ShowOrdersNitems(int customerId)
             {

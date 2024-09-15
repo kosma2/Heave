@@ -24,7 +24,7 @@
                     if (feature.properties && feature.properties.PointName) {
                         // Bind hover to show popup
                         layer.on('mouseover', function (e) {
-                            e.target.bindPopup(feature.properties.PointName + feature.properties.Buffer).openPopup();
+                            e.target.bindPopup(feature.properties.PointName).openPopup();
                         });
                         layer.on('mouseout', function (e) {
                             e.target.closePopup();

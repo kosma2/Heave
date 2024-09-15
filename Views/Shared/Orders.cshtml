@@ -7,12 +7,13 @@
         <th>Address</th>
         <th>Status</th>
     </tr>
-@foreach (List<String> order in Model)
+@foreach (List<String> order in Model)//orderId, Address, Status
 {
     <tr>
-        <td>@order[0]</td>
+        <td>@order[0]</td>      
         <td>@order[1]</td>
         <td>@order[2]</td>
+        <td><a href=@Url.Action("DeleteOrder", "Admin", new{orderId = order[0]})>delete</a></td>
     </tr>
 }
 </table>  

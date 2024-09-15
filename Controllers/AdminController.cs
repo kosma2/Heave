@@ -47,6 +47,7 @@ public class AdminController : Controller
         List<(int, String, int)> memberList = adminConnect.DBListMembers();
         return View(memberList);
     }
+
     [HttpGet]
     [Route("CreateCustomer/{memberId}")]
     public IActionResult CreateCustomer(int memberId, string memName)
@@ -55,7 +56,18 @@ public class AdminController : Controller
         Customer customer = new Customer() { MemberId = memberId };
         return View("CreateCustomer", customer);
     }
-
+    [HttpGet]
+    public IActionResult DeleteOrder(int orderId)
+    {
+        Program.adminConnect adminConnect = InitAdminConnect();
+        int orderDeleted = adminConnect.DBdeleteOrder(orderId);
+        if(orderDeleted > 0){
+        ViewBag.Message = $"Order number {orderDeleted} was deleted";
+        return View("Confirmation");
+        }else{
+            return View("Problem");
+        }
+    }
 
     [HttpPost]
     public IActionResult UpdateRole(int memberId, int role)

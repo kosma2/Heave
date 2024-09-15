@@ -33,9 +33,9 @@ public class GeoController : Controller
     }
     public IActionResult Dijkstra()
     {
+                int custId = 1014; //temp id
         Program.GeoConnect geoConnect = InitGeoConnect();
         MapHelper mapHelper = new(_configuration, _hubContext);
-        int custId = 1014; //temp id
         List<Node> pathNodeList = mapHelper.PathToMap(customerId: custId.ToString());
         List<(int, string, string, string, string, int)> markerList = geoConnect.GetPathNodesInfo(pathNodeList,custId);  //get the nodes' info to create features
         foreach((int, string, string, string, string, int) marker in markerList){System.Console.WriteLine($"feature ready List marker {marker.Item1}");}

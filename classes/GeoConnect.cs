@@ -337,7 +337,6 @@ namespace Heave
                     }
                     // Fill in the missing info for the customer feature
                     String custAddress = GetCustomerAddress(customerId, connection, transaction);
-                    //var result = markerInfo.FirstOrDefault(mi => mi.Item1 == customerId);
 
                     int custShapeId = -1;
                     string custMarkerType = "Customer";
@@ -345,20 +344,8 @@ namespace Heave
                     string custMarkerName = custAddress;
                     System.Console.WriteLine($"Customer geo is {custGeo}");
                     int custBuffer = 0;
-                    //int index = markerInfo.FindIndex(mi => mi.Item4 == customerId.ToString());  // Find the index of the item
-                    //if (index != -1)  // Check if the item was found
-                    //{
-                    //var originalTuple = markerInfo[index];
-                    // Create a new  customer tuple with the modified value (e.g., changing the marker type)
-                    //(int, string, string, string, string, int) modifiedTuple = (originalTuple.Item1, "NewMarkerType", originalTuple.Item3, originalTuple.Item4, originalTuple.Item5, originalTuple.Item6);
                     (int, string, string, string, string, int) customerFeatures = (custShapeId, custMarkerType, custShapeName, custMarkerName, custGeo, custBuffer);
-                    /* Replace the original customer tuple in the list
-                    //markerInfo[index] = modifiedTuple;
-                //}
-                else
-                {
-                    Console.WriteLine("Marker not found.");
-                }*/
+                
                     markerInfo.Add(customerFeatures);
                 }
                 return markerInfo;
@@ -573,8 +560,8 @@ namespace Heave
                     throw; // Re-throw the exception
                 }
             }
-            public override void DBdeleteOrder(int orderId)
-            { }
+            public override int DBdeleteOrder(int orderId)
+            { return 0;}
             public override (int, int) InterfaceCreateOrder()
             {
                 return (0, 0);

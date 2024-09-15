@@ -11,25 +11,31 @@
     <div id="map" style="width: 100%; height: 700px;"></div>
     <script>
         var geoJsonData = @Html.Raw(Model); // Embed the model data directly in the page
-        console.log(geoJsonData);
         document.addEventListener('DOMContentLoaded', function () {
             var mymap = L.map('map').setView([49.4925, -117.2942], 13);
             L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
                 maxZoom: 17,
                 attribution: 'Map data © <a href="https://opentopomap.org">OpenTopoMap</a> contributors'
             }).addTo(mymap);
-
+            var featureCoordinates = [];        //stores coordinates for flightpath polyline
             L.geoJSON(geoJsonData, {
                 onEachFeature: function (feature, layer) {
                     if (feature.properties && feature.properties.PointName) {
                         // Bind hover to show popup
                         layer.on('mouseover', function (e) {
-                            e.target.bindPopup(feature.properties.PointName + feature.properties.Buffer).openPopup();
+                            e.target.bindPopup(feature.properties.PointName).openPopup();
                         });
                         layer.on('mouseout', function (e) {
                             e.target.closePopup();
                         });
                     }
+                    // Collect coordinates for polyline drawing
+                    const latLng = layer.getLatLng();
+                    featureCoordinates.push(latLng);
+                    console.log('Added coordinates to featureCoordinates:', latLng);
+
+
+
                     // Check if there is a Buffer attribute and draw a circle
                     if (feature.properties.Buffer > 0 && feature.properties.FeatureType == "NoFlyNode") {
                         L.circle(layer.getLatLng(), {
@@ -41,6 +47,15 @@
                     }
                 }
             }).addTo(mymap);
+
+            // Draw polyline connecting the feature points
+             if (featureCoordinates.length > 1) {
+                 L.polyline(featureCoordinates, {
+                     color: 'blue',
+                     weight: 3,
+                     opacity: 0.7
+                 }).addTo(mymap);
+             }
 
             //marker animation
 

@@ -31,7 +31,7 @@
                         });
                         // Bind click for deletion
                         layer.on('click', function (e) {
-                            var featureId = feature.properties.PointId; // Ensure 'PointName' is the correct property key
+                            var featureId = feature.properties.PointId; 
                             var message = "Delete this feature: " + featureId + "?";
                             if (confirm(message)) {
                                 //var featureId = feature.properties.PointId;
@@ -61,7 +61,6 @@
 
             // Delete feature by sending an AJAX request
             function deleteFeature(featureId) {
-                console.log("Attempting to delete feature with ID:", featureId);
 
                 fetch(`/Geo/DeleteFeature?featureId=${featureId}`, { method: 'DELETE' })
 

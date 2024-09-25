@@ -2,7 +2,6 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Heave.Models;
 using Microsoft.AspNetCore.SignalR;
-
 using NetTopologySuite;
 using NetTopologySuite.Features;
 using NetTopologySuite.Geometries;
@@ -13,12 +12,19 @@ namespace Heave.Controllers;
 public class GeoController : Controller
 {
     private readonly IHubContext<CoordinateHub> _hubContext;
-    private Program.GeoConnect InitGeoConnect()//handles sql init for adminConnect methods
+    private Program.GeoConnect InitGeoConnect()//handles sql init for GeoConnect DB methods
     {
         string connectionString = _configuration.GetConnectionString("DefaultConnection");
         Program.GeoConnect geoConnect = new();
         geoConnect.SqlStr = connectionString;
         return geoConnect;
+    }
+    private Program.adminConnect InitAdminConnect()//handles sql init for AdminConnect DB methods
+    {
+        string connectionString = _configuration.GetConnectionString("DefaultConnection");
+        Program.adminConnect adminConnect = new();
+        adminConnect.SqlStr = connectionString;
+        return adminConnect;
     }
     private readonly IConfiguration _configuration;
     public GeoController(IConfiguration configuration, IHubContext<CoordinateHub> hubContext)
@@ -31,18 +37,20 @@ public class GeoController : Controller
     {
         return View();
     }
-    public IActionResult Dijkstra()
+    public IActionResult Dijkstra(int orderId)
     {
-                int custId = 1014; //temp id
+        //int custId = 1014; //temp id
+        Program.adminConnect adminConnect = InitAdminConnect();
+        int customerId = adminConnect.GetCustomerId(orderId);
         Program.GeoConnect geoConnect = InitGeoConnect();
-        MapHelper mapHelper = new(_configuration, _hubContext);
-        List<Node> pathNodeList = mapHelper.PathToMap(customerId: custId.ToString());
-        List<(int, string, string, string, string, int)> markerList = geoConnect.GetPathNodesInfo(pathNodeList,custId);  //get the nodes' info to create features
-        foreach((int, string, string, string, string, int) marker in markerList){System.Console.WriteLine($"feature ready List marker {marker.Item1}");}
+        MapHelper mapHelper = new(_configuration, _hubContext);//initialize DB config and drone ping hub
+        List<Node> pathNodeList = mapHelper.PathToMap(customerId: customerId.ToString());       // creates a flight path to customerId location
+        List<(int, string, string, string, string, int)> markerList = geoConnect.GetPathNodesInfo(pathNodeList, customerId);  //get the nodes' info to create geoJson map features
+        //foreach((int, string, string, string, string, int) marker in markerList){System.Console.WriteLine($"feature ready List marker {marker.Item1}");}
         GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
         FeatureCollection? featureCollection = new FeatureCollection();
         WKTReader? wktReader = new WKTReader(geometryFactory);
-
+        // creates geoJson features to go with the map
         foreach ((int pointId, string featureType, string shapeType, string pointName, string wkt, int buffer) point in markerList)
         {
             // Read the geography from the WKT
@@ -56,12 +64,20 @@ public class GeoController : Controller
             feature.Attributes.Add("PointName", point.pointName);
             feature.Attributes.Add("Buffer", point.buffer);
             featureCollection.Add(feature);
-
         }
         GeoJsonWriter? geoJsonWriter = new GeoJsonWriter();
         var geoJsonString = geoJsonWriter.Write(featureCollection);
-        //return View("Features", geoJsonString);
+        System.Console.WriteLine(geoJsonString);
         return View("Dijk", geoJsonString);
+    }
+    public IActionResult GetOrderPath(int orderId)
+    {
+        System.Console.WriteLine($"GetOrderPath called with order id {orderId}.");
+        MapHelper mapHelper = new(_configuration, _hubContext);//initialize DB config and drone ping hub
+
+        var data = mapHelper.GetPath(1014);
+        System.Console.WriteLine(data);
+        return Content(data, "application/json");
     }
 
     public IActionResult Features()
@@ -100,11 +116,11 @@ public class GeoController : Controller
     }
 
     [HttpPost]
-    public IActionResult CreateFeature(string FeatureType,string FeatureName, String Coordinates, int Buffer)
+    public IActionResult CreateFeature(string FeatureType, string FeatureName, String Coordinates, int Buffer)
     {
         List<string> coordList = new() { Coordinates };
         Program.GeoConnect geoConnect = InitGeoConnect();
-        geoConnect.DBCreateGeoObject(FeatureType,"point", FeatureName, coordList, Buffer);
+        geoConnect.DBCreateGeoObject(FeatureType, "point", FeatureName, coordList, Buffer);
         ViewBag.Message = "Feature Created";
         return View("Confirmation");
     }

@@ -1,19 +1,153 @@
 @model List<List<string>>
+<!DOCTYPE html>
+<html>
 
-<h2>Orders for @ViewBag.Message</h2>
-<table>
-    <tr>
-        <th>Order ID</th>
-        <th>Address</th>
-        <th>Status</th>
-    </tr>
-@foreach (List<String> order in Model)//orderId, Address, Status
-{
-    <tr>
-        <td>@order[0]</td>      
-        <td>@order[1]</td>
-        <td>@order[2]</td>
-        <td><a href=@Url.Action("DeleteOrder", "Admin", new{orderId = order[0]})>delete</a></td>
-    </tr>
-}
-</table>  
+<head>
+    <title>Map Features</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
+</head>
+
+<body>
+    <h2>Orders for @ViewBag.Message</h2>
+    <table>
+        <tr>
+            <th>Order ID</th>
+            <th>Address</th>
+            <th>Status</th>
+        </tr>
+        @foreach (List<String> order in Model) // orderId, Address, Status <<< button for the map<td><a href="#" onclick="deliverOrder('@order[0]'); return false;">deliver</a></td>
+        {
+            <tr>
+                <td>@order[0]</td>
+                <td>@order[1]</td>
+                <td>@order[2]</td>
+                <td><a href=@Url.Action("DeleteOrder", "Admin", new{orderId = order[0]})>delete</a></td>
+                <td><a href=@Url.Action("Dijkstra", "Geo", new{orderId = order[0]})>deliver</a></td>
+            </tr>
+        }
+    </table>
+    <!--<div id="map" style="width: 100%; height: 700px;"></div>-->
+
+    <script>
+        var mymap;
+        var marker;
+        var connection;
+        var animationQueue = [];
+        var animating = false;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize the map
+            mymap = L.map('map').setView([49.4925, -117.2942], 13);
+            L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                maxZoom: 17,
+                attribution: 'Map data © <a href="https://opentopomap.org">OpenTopoMap</a> contributors'
+            }).addTo(mymap);
+
+            // Initialize the marker
+            marker = L.marker([49.4925, -117.2942]).addTo(mymap).bindPopup("Initial Position").openPopup();
+
+            // Initialize the SignalR connection
+            connection = new signalR.HubConnectionBuilder().withUrl("/coordinateHub").build();
+
+            // Handle incoming coordinates
+            connection.on("ReceiveCoordinate", function (coord) {
+                // Existing code for handling coordinates
+            });
+
+            connection.start().then(function () {
+                console.log("SignalR connection established.");
+            }).catch(function (err) {
+                console.error("SignalR connection error:", err.toString());
+            });
+        });
+
+        async function deliverOrder(orderId) {  // Mark the function async
+            //try {
+            // Build the URL to fetch data
+            var url = '@Url.Action("GetOrderPath", "Geo")' + '?orderId=' + encodeURIComponent(orderId);
+
+            // Clear previous layers (if only one delivery at a time)
+            mymap.eachLayer(function (layer) {
+                if (!(layer instanceof L.TileLayer)) {
+                    mymap.removeLayer(layer);
+                }
+            });
+
+            // Re-add the marker
+            marker = L.marker([49.4925, -117.2942]).addTo(mymap).bindPopup("Initial Position").openPopup();
+
+            // Fetch data from the server
+
+            const response = await fetch(url);
+
+            if (response.ok) {
+                if (response.headers.get('content-type')?.includes('application/json')) {
+                    const geoJsonData = await response.json(); // This should parse the response as an object
+                    console.log('GeoJSON Data:', geoJsonData); // Should log as an object
+                } else {
+                    console.error('Error: The response is not in JSON format');
+                }
+            } else {
+                console.error('Error: Failed to fetch, status code:', response.status);
+            }
+
+            console.log('is good?');
+            //var featureCoordinates = [];
+
+            // Process the GeoJSON data
+            L.geoJSON(geoJsonData, {
+                onEachFeature: function (feature, layer) {
+                    //console.log('Feature:', feature);
+
+                    //if (feature.properties && feature.properties.PointName) {
+                    // Bind hover to show popup
+                    /*layer.on('mouseover', function (e) {
+                        e.target.bindPopup(feature.properties.PointName).openPopup();
+                    });
+                    layer.on('mouseout', function (e) {
+                        e.target.closePopup();
+                    });
+                    //}
+                    // Only proceed if the feature has a point geometry
+                    if (feature.geometry.type === 'Point') {
+                        const latLng = layer.getLatLng();
+                        featureCoordinates.push(latLng);
+                    //}
+
+                    // Draw circles for NoFlyNodes
+                    /*if (feature.properties.Buffer > 0 && feature.properties.FeatureType == "NoFlyNode") {
+                        L.circle(layer.getLatLng(), {
+                            color: 'red',
+                            fillColor: 'orange',
+                            fillOpacity: 0.5,
+                            radius: feature.properties.Buffer
+                        }).addTo(mymap);
+                    }*/
+                }
+            }).addTo(mymap);
+
+            /*/ Draw polyline connecting the feature points if there are multiple points
+            if (featureCoordinates.length > 1) {
+                L.polyline(featureCoordinates, {
+                    color: 'blue',
+                    weight: 3,
+                    opacity: 0.7
+                }).addTo(mymap);
+            }
+
+            // Re-initialize marker animation variables
+            animationQueue = [];
+            animating = false;*/
+            //} catch (error) {
+            //console.error('Error fetching order data:', error);
+            //}
+        }
+    </script>
+
+    @if (ViewBag.Message != null)
+    {
+        <p>@ViewBag.Message</p>
+    }
+</body>
+
+</html>

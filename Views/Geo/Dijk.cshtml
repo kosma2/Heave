@@ -11,6 +11,7 @@
     <div id="map" style="width: 100%; height: 700px;"></div>
     <script>
         var geoJsonData = @Html.Raw(Model); // Embed the model data directly in the page
+                console.log('Fetched GeoJSON:', geoJsonData);
         document.addEventListener('DOMContentLoaded', function () {
             var mymap = L.map('map').setView([49.4925, -117.2942], 13);
             L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
@@ -18,6 +19,7 @@
                 attribution: 'Map data © <a href="https://opentopomap.org">OpenTopoMap</a> contributors'
             }).addTo(mymap);
             var featureCoordinates = [];        //stores coordinates for flightpath polyline
+            
             L.geoJSON(geoJsonData, {
                 onEachFeature: function (feature, layer) {
                     if (feature.properties && feature.properties.PointName) {

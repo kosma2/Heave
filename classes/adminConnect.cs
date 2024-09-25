@@ -388,6 +388,33 @@ namespace Heave
             {
                 return 0;
             }
+            public int GetCustomerId(int orderId)
+            {
+                SqlConnection connection = GetConnection(SqlStr);
+                using(connection)
+                {
+                    string cmndString = "SELECT CustomerId FROM orders WHERE orderId = @orderId";
+                    SqlCommand command = new(cmndString, connection);
+                    using(command)
+                    {
+                        command.Parameters.AddWithValue( "@orderId", orderId);
+                        connection.Open();
+                        SqlDataReader reader = command.ExecuteReader();
+                        using(reader)
+                        {
+                            if(reader.Read())
+                            {
+                                int customerId = reader.GetInt32(0);
+                                return customerId;
+                            }else
+                            {
+                                System.Console.WriteLine("No customerId returned");
+                                return -1;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

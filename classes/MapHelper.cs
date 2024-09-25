@@ -3,7 +3,11 @@ using NetTopologySuite.Geometries;
 using Microsoft.AspNetCore.SignalR;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.LinearReferencing;
-
+using Microsoft.AspNetCore.SignalR;
+using NetTopologySuite;
+using NetTopologySuite.Features;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
 
 namespace Heave
 {
@@ -45,15 +49,18 @@ namespace Heave
         {
             Console.WriteLine(e.Message); // Handle the progress update
         }
-
-
-        public List<Node> PathToMap(string customerId)     //creates a dijkstra path and outputs it in json for Leaflet mapping
+        private Program.GeoConnect InitGeoConnect()//handles sql init for GeoConnect DB methods
         {
-            String startNode = "p12";
-
             string connectionString = _configuration.GetConnectionString("DefaultConnection");
             Program.GeoConnect geoConnect = new();
             geoConnect.SqlStr = connectionString;
+            return geoConnect;
+        }
+
+        public List<Node> PathToMap(string customerId)     //creates a dijkstra path and outputs it in json for Leaflet mapping
+        {
+            Program.GeoConnect geoConnect = InitGeoConnect();
+            String startNode = "p12";
             List<Node> nodeList = geoConnect.DBGetGraphData(Convert.ToInt32(customerId));
             foreach (Node node in nodeList)
             {
@@ -62,10 +69,39 @@ namespace Heave
             Dijkstra? dijkstra = new Dijkstra();
             Node startingNode = nodeList.FirstOrDefault(node => node.Id == startNode);
             List<Node> pathNodeList = dijkstra.ExecuteDij(startingNode, nodeList, customerId);//obtain flight path points
-            foreach (Node node in pathNodeList) { System.Console.WriteLine($"Raw Dijk List {node.Id}"); }
+            //foreach (Node node in pathNodeList) { System.Console.WriteLine($"Raw Dijk List {node.Id}"); }
             List<Coordinate> pathPoints = geoConnect.NodesToCoordinates(pathNodeList);
             DronePing(pathPoints);//Start drone dummy along the path
             return pathNodeList;
+        }
+        public String GetPath(int custId)
+        {
+            Program.GeoConnect geoConnect = InitGeoConnect();
+
+            List<Node> pathNodeList = PathToMap(customerId: custId.ToString());       // creates a flight path to customerId location
+            List<(int, string, string, string, string, int)> markerList = geoConnect.GetPathNodesInfo(pathNodeList, custId);  //get the nodes' info to create geoJson map features
+            //foreach((int, string, string, string, string, int) marker in markerList){System.Console.WriteLine($"feature ready List marker {marker.Item1}");}
+            GeometryFactory? geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+            FeatureCollection? featureCollection = new FeatureCollection();
+            WKTReader? wktReader = new WKTReader(geometryFactory);
+            // creates geoJson features to go with the map
+            foreach ((int pointId, string featureType, string shapeType, string pointName, string wkt, int buffer) point in markerList)
+            {
+                // Read the geography from the WKT
+                Geometry? geometry = wktReader.Read(point.wkt);
+
+                // Create a feature with the geometry and an attributes table
+                Feature? feature = new Feature(geometry, new AttributesTable());
+                feature.Attributes.Add("PointId", point.pointId);
+                feature.Attributes.Add("FeatureType", point.featureType);
+                System.Console.WriteLine($"Feature list {point.pointName}");
+                feature.Attributes.Add("PointName", point.pointName);
+                feature.Attributes.Add("Buffer", point.buffer);
+                featureCollection.Add(feature);
+            }
+            GeoJsonWriter? geoJsonWriter = new GeoJsonWriter();
+            var geoJsonString = geoJsonWriter.Write(featureCollection);
+            return geoJsonString;
         }
     }
 }
